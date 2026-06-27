@@ -16916,6 +16916,16 @@ function startLiveClock() {
   .tm-add{display:flex;gap:8px;margin-top:13px;}
   .tm-add input{flex:1;border:1px solid var(--bd);border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit;color:var(--ink);outline:none;background:#fff;}
   .tm-add input:focus{border-color:var(--brand);}
+  /* milestone states: done (green) · active (pulsing amber) + live work timer */
+  .tm-node.done:before{background:#16a34a;border-color:#16a34a;}
+  .tm-node.active:before{border-color:var(--amber);background:#fff;animation:tmPulse 1.5s ease-in-out infinite;}
+  @keyframes tmPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.55);}50%{box-shadow:0 0 0 5px rgba(245,158,11,0);}}
+  .tm-inprog{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#b45309;background:#fff3df;padding:2px 7px;border-radius:5px;margin-left:7px;vertical-align:middle;}
+  .tm-node-foot{display:flex;align-items:center;gap:9px;margin-top:7px;flex-wrap:wrap;}
+  .tm-live{font-size:12px;font-weight:700;color:#b45309;background:#fff3df;border:1px solid #fcd9a0;border-radius:7px;padding:4px 11px;font-family:'DM Mono',ui-monospace,monospace;}
+  .tm-done-btn{border:1px solid #16a34a;background:#fff;color:#16a34a;border-radius:7px;padding:4px 12px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .tm-done-btn:hover{background:#16a34a;color:#fff;}
+  .tm-worked{font-size:11px;font-weight:700;color:#16a34a;background:#e6faf0;border-radius:6px;padding:3px 10px;}
   .tm-rte{border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:14px;}
   .tm-rte-bar{display:flex;gap:2px;background:#f6f7fb;border-bottom:1px solid var(--bd);padding:5px 7px;}
   .tm-rte-bar button{border:0;background:none;width:28px;height:26px;border-radius:6px;cursor:pointer;color:var(--ink2);font-size:13px;}
@@ -16999,7 +17009,7 @@ function startLiveClock() {
       <div class="pf-modal-b">
         <!-- TASK MAP — milestone timeline (sits just before the description) -->
         <div class="tm-section">
-          <div class="tm-sec-h">🗺 Task Map</div>
+          <div class="tm-sec-h">🗺 Task Map <span id="tmMapTotal" style="margin-left:auto;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink2);"></span></div>
           <div class="tm-tl" id="tmMap"></div>
           <div class="tm-add">
             <input id="tmMsInput" placeholder="Add milestone — e.g. Eon Brain Plan Done" onkeydown="if(event.key==='Enter')addMilestone()">
@@ -17172,11 +17182,34 @@ function startLiveClock() {
       </div>`;
     }).join('');
   }
-  // ---- helpers: plain-text preview + date formatting ----
+  // ---- helpers: plain-text preview + date / duration formatting ----
   function plain(h){ const d=document.createElement('div'); d.innerHTML=h||''; return d.textContent||''; }
   function fmtDay(v){ if(!v) return ''; const dt=new Date(v); if(isNaN(dt)) return v; return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
   function fmtShort(v){ if(!v) return ''; const dt=new Date(v); if(isNaN(dt)) return v; return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); }
   function isoOf(v){ if(!v) return ''; const dt=new Date(v); if(isNaN(dt)) return ''; return dt.toISOString().slice(0,10); }
+  // date + time, e.g. "27 Jun 2026, 02:45 PM"
+  function fmtDateTime(v){ if(!v) return ''; const d=new Date(v); if(isNaN(d)) return ''+v;
+    return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+', '+d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}); }
+  // recorded duration "1h 20m" / "20m 05s" / "45s"
+  function fmtDur2(ms){ if(!ms||ms<0)ms=0; const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),x=s%60;
+    if(h>0) return h+'h '+m+'m'; if(m>0) return m+'m '+x+'s'; return x+'s'; }
+  // live ticking duration "1h 20m 05s"
+  function fmtLive(ms){ if(!ms||ms<0)ms=0; const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),x=s%60;
+    const pad=n=>String(n).padStart(2,'0'); return (h>0?h+'h ':'')+(h>0?pad(m):m)+'m '+pad(x)+'s'; }
+  // normalise milestones to {text,startTs,doneTs,marker} (back-fills the old {text,ts} shape)
+  function normMs(t){
+    if(!t.createdTs) t.createdTs = Date.now();
+    if(!t.milestones || !t.milestones.length){ t.milestones=[{text:'Task Created',startTs:t.createdTs,doneTs:t.createdTs,marker:true}]; return; }
+    t.milestones = t.milestones.map((m,i)=>{
+      if(m.startTs!=null) return m;
+      const ts = m.ts!=null ? m.ts : t.createdTs;
+      const isCreated = i===0 || /task created/i.test(m.text||'');
+      return {text:m.text, startTs:ts, doneTs:ts, marker:isCreated};
+    });
+    if(t.milestones[0]) t.milestones[0].marker = true;
+  }
+  // index of the one milestone that is started but not yet done (-1 if none)
+  function activeMs(t){ const a=t.milestones||[]; for(let i=0;i<a.length;i++){ if(!a[i].marker && a[i].doneTs==null) return i; } return -1; }
 
   function cardHTML(t){
     const glow = t.directorUnseen ? ' attn' : '';
@@ -17218,7 +17251,7 @@ function startLiveClock() {
     if(role==='employee' && t.directorUnseen){ t.directorUnseen=false; save(); }
     // ensure rich-model fields exist (back-fill older / seeded tasks)
     if(!t.createdTs) t.createdTs = Date.now();
-    if(!t.milestones || !t.milestones.length) t.milestones=[{text:'Task Created', ts:t.createdTs}];
+    normMs(t);
     t.links=t.links||[]; t.attach=t.attach||[]; t.labels=t.labels||[]; t.assignees=t.assignees||[EMP.initials];
     save();
     // header
@@ -17247,20 +17280,63 @@ function startLiveClock() {
     document.getElementById('taskModal').classList.add('open');
     render();
   }
-  function closeTask(){document.getElementById('taskModal').classList.remove('open');if(recState)stopRec();openId=null;}
+  function closeTask(){document.getElementById('taskModal').classList.remove('open');if(recState)stopRec();stopTicker();openId=null;}
 
-  // ---- Task map (milestones) ----
+  // ---- Task map (milestones with work-time tracking) ----
   function renderMap(t){
-    const el=document.getElementById('tmMap');
-    el.innerHTML=(t.milestones||[]).map(m=>
-      `<div class="tm-node"><div class="t">${esc(m.text)}</div><div class="d">${esc(fmtDay(m.ts))}</div></div>`).join('')
-      || '<div class="tm-empty">No milestones yet</div>';
+    normMs(t);
+    const el=document.getElementById('tmMap'); if(!el) return;
+    const ai=activeMs(t); let totalMs=0, steps=0;
+    el.innerHTML=(t.milestones||[]).map((m,i)=>{
+      const active=(i===ai);
+      const doneStep=(!m.marker && m.doneTs!=null);
+      if(doneStep){ steps++; totalMs+=(m.doneTs-m.startTs); }
+      else if(active){ steps++; }
+      const cls='tm-node'+(active?' active':'')+(doneStep?' done':'');
+      let foot='';
+      if(active){
+        foot=`<span class="tm-live" id="tmLiveTimer">⏱ ${fmtLive(Date.now()-m.startTs)}</span>`+
+             `<button class="tm-done-btn" onclick="milestoneDone(${i})">✓ Mark Done</button>`;
+      } else if(doneStep){
+        foot=`<span class="tm-worked">✓ Worked ${fmtDur2(m.doneTs-m.startTs)}</span>`;
+      }
+      const when = active ? ('Started '+fmtDateTime(m.startTs)) : fmtDateTime(m.doneTs||m.startTs);
+      return `<div class="${cls}">
+        <div class="t">${esc(m.text)}${active?'<span class="tm-inprog">● In progress</span>':''}</div>
+        <div class="d">${esc(when)}</div>
+        ${foot?`<div class="tm-node-foot">${foot}</div>`:''}
+      </div>`;
+    }).join('') || '<div class="tm-empty">No milestones yet</div>';
+    // running total chip in the section header
+    const sum=document.getElementById('tmMapTotal');
+    if(sum) sum.innerHTML = steps ? `⏱ ${fmtDur2(totalMs)} worked · ${steps} step${steps>1?'s':''}${ai>=0?' · <b style="color:#b45309">1 running</b>':''}` : '';
+    if(ai>=0) startTicker(); else stopTicker();
   }
   function addMilestone(){
     const t=tasks.find(x=>x.id===openId); if(!t)return;
     const inp=document.getElementById('tmMsInput'); const v=inp.value.trim(); if(!v)return;
-    t.milestones=t.milestones||[]; t.milestones.push({text:v, ts:Date.now()});
+    normMs(t);
+    const now=Date.now();
+    // starting the next step banks the time of the one currently running
+    const ai=activeMs(t); if(ai>=0) t.milestones[ai].doneTs=now;
+    t.milestones.push({text:v, startTs:now, doneTs:null});
     save(); renderMap(t); renderActivity(t); inp.value=''; inp.focus();
+  }
+  function milestoneDone(i){
+    const t=tasks.find(x=>x.id===openId); if(!t||!t.milestones[i]) return;
+    if(t.milestones[i].doneTs!=null) return;
+    t.milestones[i].doneTs=Date.now();
+    save(); renderMap(t); renderActivity(t);
+  }
+  // live work-timer for the active milestone
+  let tmTicker=null;
+  function startTicker(){ if(tmTicker) return; tmTicker=setInterval(tickLive,1000); }
+  function stopTicker(){ if(tmTicker){ clearInterval(tmTicker); tmTicker=null; } }
+  function tickLive(){
+    const t=tasks.find(x=>x.id===openId); if(!t){ stopTicker(); return; }
+    const ai=activeMs(t); const el=document.getElementById('tmLiveTimer');
+    if(ai<0 || !el){ stopTicker(); return; }
+    el.textContent='⏱ '+fmtLive(Date.now()-t.milestones[ai].startTs);
   }
 
   // ---- Description ----
@@ -17303,7 +17379,11 @@ function startLiveClock() {
   function tmTabReset(){ const tabs=document.querySelectorAll('#taskModal .tm-tab'); tabs.forEach((b,i)=>b.classList.toggle('on',i===0));
     document.getElementById('tmPaneProps').style.display=''; document.getElementById('tmPaneAct').style.display='none'; }
   function renderActivity(t){ const el=document.getElementById('tmPaneAct');
-    const items=(t.milestones||[]).slice().reverse().map(m=>`<div class="tm-act-item">🔹 <div><b>${esc(m.text)}</b><div style="font-size:11px;color:var(--ink3)">${esc(fmtDay(m.ts))}</div></div></div>`).join('');
+    const items=(t.milestones||[]).slice().reverse().map(m=>{
+      const running=(!m.marker && m.doneTs==null);
+      const worked=(!m.marker && m.doneTs!=null)?` · ⏱ ${fmtDur2(m.doneTs-m.startTs)}`:(running?' · ⏱ running…':'');
+      return `<div class="tm-act-item">${running?'🟠':'🔹'} <div><b>${esc(m.text)}</b><div style="font-size:11px;color:var(--ink3)">${esc(fmtDateTime(m.doneTs||m.startTs))}${worked}</div></div></div>`;
+    }).join('');
     el.innerHTML=items||'<div class="tm-empty">No activity yet.</div>'; }
   function renderThread(t){
     const el=document.getElementById('tmThread');
@@ -17384,7 +17464,7 @@ function startLiveClock() {
       createdByDirector:isDir, directorUnseen:isDir,
       createdBy: isDir?'Md Fahim (Director)':EMP.name,
       createdTs: now,
-      milestones:[{text:'Task Created', ts:now}],
+      milestones:[{text:'Task Created', startTs:now, doneTs:now, marker:true}],
       assignees:[EMP.initials], links:[], attach:[], labels:[],
       start:'', due:null, feedback:[]
     });
