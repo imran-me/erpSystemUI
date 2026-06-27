@@ -16911,7 +16911,7 @@ function startLiveClock() {
   .tm-node:before{content:'';position:absolute;left:3px;top:2px;width:11px;height:11px;border-radius:50%;border:2.5px solid var(--brand);background:#fff;z-index:1;}
   .tm-node:after{content:'';position:absolute;left:8px;top:13px;bottom:-1px;width:2px;background:#dfe3ee;}
   .tm-node:last-child:after{display:none;}
-  .tm-node .t{font-size:13px;font-weight:700;color:var(--ink);line-height:1.3;}
+  .tm-node .t{font-size:13px;font-weight:700;color:var(--ink);line-height:1.3;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
   .tm-node .d{font-size:11px;color:var(--ink3);font-family:'DM Mono',ui-monospace,monospace;margin-top:3px;letter-spacing:.3px;}
   .tm-add{display:flex;gap:8px;margin-top:13px;}
   .tm-add input{flex:1;border:1px solid var(--bd);border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit;color:var(--ink);outline:none;background:#fff;}
@@ -17293,16 +17293,16 @@ function startLiveClock() {
       if(doneStep){ steps++; totalMs+=(m.doneTs-m.startTs); }
       else if(active){ steps++; }
       const cls='tm-node'+(active?' active':'')+(doneStep?' done':'');
-      let foot='';
+      let titleBadge='', foot='';
       if(active){
-        foot=`<span class="tm-live" id="tmLiveTimer">⏱ ${fmtLive(Date.now()-m.startTs)}</span>`+
-             `<button class="tm-done-btn" onclick="milestoneDone(${i})">✓ Mark Done</button>`;
+        titleBadge=`<span class="tm-live" id="tmLiveTimer">⏱ ${fmtLive(Date.now()-m.startTs)}</span>`;
+        foot=`<button class="tm-done-btn" onclick="milestoneDone(${i})">✓ Mark Done</button>`;
       } else if(doneStep){
-        foot=`<span class="tm-worked">✓ Worked ${fmtDur2(m.doneTs-m.startTs)}</span>`;
+        titleBadge=`<span class="tm-worked">✓ Worked ${fmtDur2(m.doneTs-m.startTs)}</span>`;
       }
       const when = active ? ('Started '+fmtDateTime(m.startTs)) : fmtDateTime(m.doneTs||m.startTs);
       return `<div class="${cls}">
-        <div class="t">${esc(m.text)}${active?'<span class="tm-inprog">● In progress</span>':''}</div>
+        <div class="t"><span class="tm-ttl">${esc(m.text)}</span>${titleBadge}${active?'<span class="tm-inprog">● In progress</span>':''}</div>
         <div class="d">${esc(when)}</div>
         ${foot?`<div class="tm-node-foot">${foot}</div>`:''}
       </div>`;
