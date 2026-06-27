@@ -54,8 +54,9 @@
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow:hidden;}
 
 /* ========== SCREEN WRAPPERS ========== */
-#login-screen { display:flex; align-items:center; justify-content:center; height:100vh; background:var(--login-grad); }
-#erp-screen { display:none; height:100vh; }
+/* Login disabled for the testing UI — boot straight into the ERP (MD: 27-Jun-2026) */
+#login-screen { display:none !important; align-items:center; justify-content:center; height:100vh; background:var(--login-grad); }
+#erp-screen { display:flex; height:100vh; }
 #crm-screen { display:none; height:100vh; }
 
 /* ========== LOGIN SCREEN ========== */
@@ -4649,7 +4650,7 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:5px;font-wei
         <div class="erp-topbar-search">🔍 <span>Search users...</span></div>
       </div>
       <div class="erp-topbar-right">
-        <button class="erp-btn btn-green">≡ My Tasks</button>
+        <button class="erp-btn btn-green" style="cursor:pointer" onclick="openMyTasks()">≡ My Tasks</button>
         <button class="erp-btn btn-primary">＋ Quick Task</button>
         <button class="icon-btn" title="Toggle theme">🌙</button>
         <button class="icon-btn" title="Notifications">🔔<span class="dot">1</span></button>
@@ -13167,7 +13168,7 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:5px;font-wei
         All Companies
       </div>
       <div class="erp-topbar-right">
-        <button class="erp-btn btn-green">≡ My Tasks</button>
+        <button class="erp-btn btn-green" style="cursor:pointer" onclick="openMyTasks()">≡ My Tasks</button>
         <button class="erp-btn btn-primary" onclick="showCRM('leads',null);document.getElementById('add-lead-modal').classList.add('open')">+ Add Lead</button>
         <div class="erp-avatar">MF</div>
         <div><div style="font-size:13px;font-weight:600;">Mohammad Fahim</div><div style="font-size:11px;color:var(--text3);">Employee</div></div>
@@ -14500,10 +14501,33 @@ function doLogin() {
   if (window.EpalTicker) window.EpalTicker.render();
 }
 function doLogout() {
-  document.getElementById('erp-screen').style.display = 'none';
+  // Login is disabled on this testing build — logout just returns to the dashboard
+  // instead of showing the (removed) login screen.
   document.getElementById('crm-screen').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('erp-screen').style.display = 'flex';
+  if (typeof goHome === 'function') goHome();
 }
+
+// ===== Topbar "My Tasks" → open the task board =====
+function openMyTasks(){
+  var screen = document.getElementById('erp-screen');
+  // Employee self-service: open their interactive Task → Board
+  if (window.EpalESS && screen && screen.classList.contains('ess-mode')) { EpalESS.show('ess-board'); return; }
+  if (window.EpalRBAC && EpalRBAC.current && EpalRBAC.current().role === 'employee' && window.EpalESS) {
+    EpalESS.activate(); EpalESS.show('ess-board'); return;
+  }
+  // Everyone else: the Task Management panel
+  showErpPanel('task', document.getElementById('nav-task') || null);
+}
+
+// ===== Boot straight into the ERP (no login) — run the init the login used to do =====
+(function bootNoLogin(){
+  function boot(){
+    try{ if (typeof startLiveClock === 'function') startLiveClock(); }catch(e){}
+    try{ if (window.EpalTicker) EpalTicker.render(); }catch(e){}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
 
 // ===== ERP NAVIGATION =====
 // MD: Updated 06-May-2026 — replaced 4 old travels-* with 25 new tv-* panels
@@ -16877,6 +16901,61 @@ function startLiveClock() {
     font-weight:700;cursor:pointer;font-family:inherit;}
   .pf-m2{display:none;}
   .pf-as-emp .pf-director-only{display:none !important;}
+  /* ---- Rich task detail (MD: 27-Jun-2026): task map · rich desc · properties ---- */
+  .tm-id{font-size:10.5px;font-weight:700;letter-spacing:.5px;color:var(--ink3);background:#f0f2f8;border-radius:6px;padding:3px 9px;display:inline-block;}
+  .tm-section{background:#f8f9fc;border:1px solid var(--bd);border-radius:12px;padding:15px 16px;margin-bottom:16px;}
+  .tm-sec-h{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);margin:0 0 13px;display:flex;align-items:center;gap:7px;}
+  .tm-tl{position:relative;}
+  .tm-node{position:relative;padding:0 0 16px 24px;}
+  .tm-node:last-child{padding-bottom:0;}
+  .tm-node:before{content:'';position:absolute;left:3px;top:2px;width:11px;height:11px;border-radius:50%;border:2.5px solid var(--brand);background:#fff;z-index:1;}
+  .tm-node:after{content:'';position:absolute;left:8px;top:13px;bottom:-1px;width:2px;background:#dfe3ee;}
+  .tm-node:last-child:after{display:none;}
+  .tm-node .t{font-size:13px;font-weight:700;color:var(--ink);line-height:1.3;}
+  .tm-node .d{font-size:11px;color:var(--ink3);font-family:'DM Mono',ui-monospace,monospace;margin-top:3px;letter-spacing:.3px;}
+  .tm-add{display:flex;gap:8px;margin-top:13px;}
+  .tm-add input{flex:1;border:1px solid var(--bd);border-radius:9px;padding:9px 12px;font-size:12.5px;font-family:inherit;color:var(--ink);outline:none;background:#fff;}
+  .tm-add input:focus{border-color:var(--brand);}
+  .tm-rte{border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+  .tm-rte-bar{display:flex;gap:2px;background:#f6f7fb;border-bottom:1px solid var(--bd);padding:5px 7px;}
+  .tm-rte-bar button{border:0;background:none;width:28px;height:26px;border-radius:6px;cursor:pointer;color:var(--ink2);font-size:13px;}
+  .tm-rte-bar button:hover{background:#fff;color:var(--ink);}
+  .tm-rte-area{min-height:74px;padding:11px 13px;font-size:13px;color:var(--ink);outline:none;line-height:1.55;}
+  .tm-rte-area:empty:before{content:attr(data-ph);color:var(--ink3);}
+  .tm-rte-area pre{background:#f0f2f8;padding:7px 10px;border-radius:7px;font-size:12px;overflow:auto;}
+  .tm-actions{display:flex;gap:9px;margin-bottom:14px;}
+  .tm-gbtn{border:1px solid var(--bd);background:#f6f7fb;border-radius:9px;padding:8px 13px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2);}
+  .tm-gbtn:hover{border-color:var(--brand);color:var(--brand);}
+  .tm-acc{border:1px solid var(--bd);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+  .tm-acc-h{background:#f6f7fb;padding:9px 13px;font-size:12.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px;}
+  .tm-acc-h .ct{color:var(--ink3);font-weight:700;}
+  .tm-acc-h .tm-acc-plus{margin-left:auto;border:0;background:none;cursor:pointer;font-size:16px;color:var(--ink3);line-height:1;}
+  .tm-acc-h .tm-acc-plus:hover{color:var(--brand);}
+  .tm-acc-b{padding:8px 13px;}
+  .tm-li{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;padding:5px 0;color:var(--ink);}
+  .tm-li a{color:var(--brand);text-decoration:none;word-break:break-all;}
+  .tm-li .x{cursor:pointer;color:var(--ink3);font-size:12px;}
+  .tm-li .x:hover{color:#dc2626;}
+  .tm-empty{font-size:12px;color:var(--ink3);text-align:center;padding:6px;}
+  .tm-tabs{display:flex;gap:4px;border-bottom:1px solid var(--bd);margin:6px 0 12px;}
+  .tm-tab{border:0;background:none;padding:8px 14px;font-family:inherit;font-size:13px;font-weight:600;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .tm-tab.on{color:var(--brand);border-color:var(--brand);}
+  .tm-prop{display:grid;grid-template-columns:122px 1fr;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #eef0f6;}
+  .tm-prop:last-child{border-bottom:none;}
+  .tm-prop>label{font-size:12.5px;color:var(--ink2);display:flex;align-items:center;gap:7px;}
+  .tm-prop select,.tm-prop input[type=date]{width:100%;box-sizing:border-box;border:1px solid var(--bd);border-radius:8px;padding:7px 9px;font-size:12.5px;font-family:inherit;color:var(--ink);outline:none;background:#fff;}
+  .tm-prop select:focus,.tm-prop input:focus{border-color:var(--brand);}
+  .tm-val{font-size:12.5px;font-weight:600;color:var(--ink);}
+  .tm-assign{display:flex;gap:4px;flex-wrap:wrap;align-items:center;}
+  .tm-chip{border:0;background:none;cursor:pointer;padding:0;border-radius:50%;opacity:.4;filter:grayscale(.45);transition:opacity .12s;}
+  .tm-chip.on{opacity:1;filter:none;box-shadow:0 0 0 2px var(--brand);border-radius:50%;}
+  .tm-cav{width:24px;height:24px;border-radius:50%;color:#fff;font-size:9.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
+  .tm-labels{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+  .tm-lab{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;display:inline-flex;align-items:center;}
+  .tm-lab .x{cursor:pointer;margin-left:4px;}
+  .tm-lab-in{border:1px dashed var(--bd);background:#fff;border-radius:7px;padding:4px 8px;font-size:11px;font-family:inherit;color:var(--ink);outline:none;min-width:96px;}
+  .tm-divider{height:1px;background:var(--bd);margin:18px 0 14px;}
+  .tm-act-item{display:flex;gap:9px;font-size:12.5px;color:var(--ink2);padding:7px 0;}
 </style>
 </head>
 <body>
@@ -16896,7 +16975,7 @@ function startLiveClock() {
         <button id="roleEmp" onclick="setRole('employee')">🧑‍💼 Employee</button>
       </div>
     </div>
-    <button class="pf-btn pf-director-only" id="assignBtn" onclick="openAssign()">＋ Assign Task</button>
+    <button class="pf-btn" id="assignBtn" onclick="openAssign()">＋ Assign Task</button>
     <button class="pf-btn ghost" onclick="window.close()">✕ Close</button>
   </header>
 
@@ -16911,17 +16990,60 @@ function startLiveClock() {
     <div class="pf-modal-box">
       <div class="pf-modal-h">
         <div>
-          <div id="tmTags" class="pf-tags" style="margin-bottom:7px;"></div>
-          <div id="tmTitle" style="font-size:17px;font-weight:700;"></div>
-          <div id="tmDesc" style="font-size:13px;color:var(--ink2);margin-top:5px;line-height:1.45;"></div>
+          <div class="tm-id" id="tmId">TASK</div>
+          <div id="tmTitle" style="font-size:17px;font-weight:700;margin-top:6px;"></div>
+          <div id="tmTags" class="pf-tags" style="margin-top:8px;"></div>
         </div>
         <button class="x" onclick="closeTask()">✕</button>
       </div>
       <div class="pf-modal-b">
-        <div class="pf-field pf-director-only">
-          <label>Status</label>
-          <select id="tmStatus" onchange="changeStatus()"></select>
+        <!-- TASK MAP — milestone timeline (sits just before the description) -->
+        <div class="tm-section">
+          <div class="tm-sec-h">🗺 Task Map</div>
+          <div class="tm-tl" id="tmMap"></div>
+          <div class="tm-add">
+            <input id="tmMsInput" placeholder="Add milestone — e.g. Eon Brain Plan Done" onkeydown="if(event.key==='Enter')addMilestone()">
+            <button class="pf-send" onclick="addMilestone()">Add</button>
+          </div>
         </div>
+
+        <!-- DESCRIPTION (rich text) -->
+        <div class="tm-rte">
+          <div class="tm-rte-bar">
+            <button onmousedown="event.preventDefault()" onclick="document.execCommand('bold')"><b>B</b></button>
+            <button onmousedown="event.preventDefault()" onclick="document.execCommand('italic')"><i>I</i></button>
+            <button onmousedown="event.preventDefault()" onclick="document.execCommand('underline')"><u>U</u></button>
+            <button onmousedown="event.preventDefault()" onclick="document.execCommand('strikeThrough')"><s>S</s></button>
+            <button onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList')">≡</button>
+            <button onmousedown="event.preventDefault()" onclick="document.execCommand('formatBlock',false,'pre')">&lt;/&gt;</button>
+          </div>
+          <div class="tm-rte-area" id="tmDescEdit" contenteditable="true" data-ph="Add a description…" onblur="saveDesc()"></div>
+        </div>
+
+        <div class="tm-actions">
+          <button class="tm-gbtn" onclick="addLink()">🔗 Add link</button>
+          <button class="tm-gbtn" onclick="addAttach()">📎 Attach</button>
+        </div>
+
+        <div class="tm-acc"><div class="tm-acc-h">Links <span class="ct" id="tmLinkCt">0</span><button class="tm-acc-plus" onclick="addLink()">+</button></div><div class="tm-acc-b" id="tmLinks"></div></div>
+        <div class="tm-acc"><div class="tm-acc-h">Attachments <span class="ct" id="tmAttCt">0</span><button class="tm-acc-plus" onclick="addAttach()">+</button></div><div class="tm-acc-b" id="tmAtt"></div></div>
+
+        <div class="tm-tabs">
+          <button class="tm-tab on" onclick="tmTab(this,'props')">Properties</button>
+          <button class="tm-tab" onclick="tmTab(this,'act')">Activity</button>
+        </div>
+        <div id="tmPaneProps">
+          <div class="tm-prop"><label>👥 Assignees</label><div class="tm-assign" id="tmAssign"></div></div>
+          <div class="tm-prop"><label>🚩 State</label><select id="tmState" onchange="setState()"></select></div>
+          <div class="tm-prop"><label>📊 Priority</label><select id="tmPrio" onchange="setPrio()"></select></div>
+          <div class="tm-prop"><label>👤 Created by</label><div class="tm-val" id="tmCreatedBy">—</div></div>
+          <div class="tm-prop"><label>📅 Start date</label><input type="date" id="tmStart" onchange="setStart()"></div>
+          <div class="tm-prop"><label>📅 Due date</label><input type="date" id="tmDue" onchange="setDue()"></div>
+          <div class="tm-prop"><label>🏷 Labels</label><div class="tm-labels" id="tmLabels"></div></div>
+        </div>
+        <div id="tmPaneAct" style="display:none"></div>
+
+        <div class="tm-divider"></div>
         <div style="font-size:12.5px;font-weight:700;color:var(--ink2);margin-bottom:6px;">💬 Feedback &amp; Communication</div>
         <div class="pf-thread" id="tmThread"></div>
         <div class="pf-compose">
@@ -16943,8 +17065,8 @@ function startLiveClock() {
   <div class="pf-modal" id="assignModal" onclick="if(event.target===this)closeAssign()">
     <div class="pf-modal-box">
       <div class="pf-modal-h">
-        <div><div style="font-size:17px;font-weight:700;">＋ Assign New Task</div>
-          <div style="font-size:12.5px;color:var(--ink2);margin-top:3px;">Will be tagged <b>“Created by Director”</b></div></div>
+        <div><div id="asModalTitle" style="font-size:17px;font-weight:700;">＋ Assign New Task</div>
+          <div id="asModalSub" style="font-size:12.5px;color:var(--ink2);margin-top:3px;">Will be tagged <b>“Created by Director”</b></div></div>
         <button class="x" onclick="closeAssign()">✕</button>
       </div>
       <div class="pf-modal-b">
@@ -17034,6 +17156,7 @@ function startLiveClock() {
       ? 'Viewing as <b>Director</b> — assign tasks and leave comments / voice notes. Tasks you create are tagged <b>“Created by Director”</b>. Switch to <b>Employee</b> to clear the glowing attention indicators.'
       : 'Viewing as <b>' + esc(EMP.name) + '</b> (employee). Opening a task with director feedback marks it as <b>read</b> and stops the glow.';
     document.querySelector('.pf-note span').textContent = r==='director' ? '👑' : '🧑‍💼';
+    const ab=document.getElementById('assignBtn'); if(ab) ab.textContent = r==='director' ? '＋ Assign Task' : '＋ New Task';
     render();
   }
 
@@ -17049,22 +17172,30 @@ function startLiveClock() {
       </div>`;
     }).join('');
   }
+  // ---- helpers: plain-text preview + date formatting ----
+  function plain(h){ const d=document.createElement('div'); d.innerHTML=h||''; return d.textContent||''; }
+  function fmtDay(v){ if(!v) return ''; const dt=new Date(v); if(isNaN(dt)) return v; return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+  function fmtShort(v){ if(!v) return ''; const dt=new Date(v); if(isNaN(dt)) return v; return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); }
+  function isoOf(v){ if(!v) return ''; const dt=new Date(v); if(isNaN(dt)) return ''; return dt.toISOString().slice(0,10); }
+
   function cardHTML(t){
     const glow = t.directorUnseen ? ' attn' : '';
     const rib = t.directorUnseen ? '<span class="pf-attn-rib">🔔 Director</span>' : '';
     const cmt = (t.feedback||[]).filter(f=>f.type==='comment').length;
     const vc  = (t.feedback||[]).filter(f=>f.type==='voice').length;
+    const ms  = (t.milestones||[]).length;
     const label = t.createdByDirector
       ? '<span class="pf-tag director">👑 Created by Director</span>'
       : '<span class="pf-tag ops">Operational</span>';
+    const dv = plain(t.desc);
     return `<div class="pf-card${glow}" draggable="true" ondragstart="drag(event,'${t.id}')" onclick="openTask('${t.id}')">
       ${rib}
       <div class="pf-card-title">${esc(t.title)}</div>
-      <div class="pf-card-desc">${esc(t.desc)}</div>
+      ${dv?`<div class="pf-card-desc">${esc(dv)}</div>`:''}
       <div class="pf-tags">${label}<span class="pf-tag p-${t.priority}">${t.priority}</span></div>
       <div class="pf-card-foot">
-        <span>💬 ${cmt}</span><span>🎙 ${vc}</span>
-        ${t.due?`<span class="due">📅 ${esc(t.due)}</span>`:''}
+        <span>💬 ${cmt}</span><span>🎙 ${vc}</span>${ms>1?`<span>🗺 ${ms}</span>`:''}
+        ${t.due?`<span class="due">📅 ${esc(fmtShort(t.due))}</span>`:''}
       </div>
     </div>`;
   }
@@ -17075,25 +17206,105 @@ function startLiveClock() {
   function colDrop(e,st,el){e.preventDefault();el.classList.remove('drop');
     const t=tasks.find(x=>x.id===dragId);if(t&&t.status!==st){t.status=st;save();render();}dragId=null;}
 
+  // ---- Assignee roster + label palette ----
+  const ROSTER=[{n:EMP.name,i:EMP.initials,c:EMP.color||'#7c3aed'},{n:'Md Fahim (Director)',i:'MF',c:'#5b3df5'},
+    {n:'Team Lead',i:'TL',c:'#0d9488'},{n:'QA Reviewer',i:'QA',c:'#ea580c'}];
+  const LABCOL=['#2563eb','#16a34a','#ea580c','#dc2626','#7c3aed','#0d9488'];
+
   // ---- Task modal ----
   function openTask(id){
     openId=id; const t=tasks.find(x=>x.id===id); if(!t)return;
     // Employee viewing clears the director's attention indicator
     if(role==='employee' && t.directorUnseen){ t.directorUnseen=false; save(); }
-    document.getElementById('tmTitle').textContent=t.title;
-    document.getElementById('tmDesc').textContent=t.desc;
+    // ensure rich-model fields exist (back-fill older / seeded tasks)
+    if(!t.createdTs) t.createdTs = Date.now();
+    if(!t.milestones || !t.milestones.length) t.milestones=[{text:'Task Created', ts:t.createdTs}];
+    t.links=t.links||[]; t.attach=t.attach||[]; t.labels=t.labels||[]; t.assignees=t.assignees||[EMP.initials];
+    save();
+    // header
+    document.getElementById('tmId').textContent = t.id;
+    document.getElementById('tmTitle').textContent = t.title;
     document.getElementById('tmTags').innerHTML=(t.createdByDirector
       ?'<span class="pf-tag director">👑 Created by Director</span>'
       :'<span class="pf-tag ops">Operational</span>')+`<span class="pf-tag p-${t.priority}">${t.priority}</span>`;
-    const sel=document.getElementById('tmStatus');
-    sel.innerHTML=STATUSES.map(s=>`<option value="${s.key}"${s.key===t.status?' selected':''}>${s.label}</option>`).join('');
+    // task map + description
+    renderMap(t);
+    document.getElementById('tmMsInput').value='';
+    document.getElementById('tmDescEdit').innerHTML = (t.desc && t.desc!=='(No description)') ? t.desc : '';
+    // links / attachments
+    renderLinks(t); renderAttach(t);
+    // properties
+    document.getElementById('tmState').innerHTML=STATUSES.map(s=>`<option value="${s.key}"${s.key===t.status?' selected':''}>${s.label}</option>`).join('');
+    document.getElementById('tmPrio').innerHTML=['high','medium','low'].map(p=>`<option value="${p}"${p===t.priority?' selected':''}>${p.charAt(0).toUpperCase()+p.slice(1)}</option>`).join('');
+    document.getElementById('tmCreatedBy').textContent = t.createdBy || (t.createdByDirector?'Md Fahim (Director)':EMP.name);
+    document.getElementById('tmStart').value = isoOf(t.start);
+    document.getElementById('tmDue').value = isoOf(t.due);
+    renderAssign(t); renderLabels(t); renderActivity(t);
+    tmTabReset();
+    // comments
     renderThread(t);
     document.getElementById('tmComment').value='';
     document.getElementById('taskModal').classList.add('open');
     render();
   }
   function closeTask(){document.getElementById('taskModal').classList.remove('open');if(recState)stopRec();openId=null;}
-  function changeStatus(){const t=tasks.find(x=>x.id===openId);if(t){t.status=document.getElementById('tmStatus').value;save();render();}}
+
+  // ---- Task map (milestones) ----
+  function renderMap(t){
+    const el=document.getElementById('tmMap');
+    el.innerHTML=(t.milestones||[]).map(m=>
+      `<div class="tm-node"><div class="t">${esc(m.text)}</div><div class="d">${esc(fmtDay(m.ts))}</div></div>`).join('')
+      || '<div class="tm-empty">No milestones yet</div>';
+  }
+  function addMilestone(){
+    const t=tasks.find(x=>x.id===openId); if(!t)return;
+    const inp=document.getElementById('tmMsInput'); const v=inp.value.trim(); if(!v)return;
+    t.milestones=t.milestones||[]; t.milestones.push({text:v, ts:Date.now()});
+    save(); renderMap(t); renderActivity(t); inp.value=''; inp.focus();
+  }
+
+  // ---- Description ----
+  function saveDesc(){ const t=tasks.find(x=>x.id===openId); if(!t)return; t.desc=document.getElementById('tmDescEdit').innerHTML; save(); render(); }
+
+  // ---- Links / attachments ----
+  function renderLinks(t){ const el=document.getElementById('tmLinks'); document.getElementById('tmLinkCt').textContent=(t.links||[]).length;
+    el.innerHTML=(t.links&&t.links.length)? t.links.map((l,i)=>`<div class="tm-li"><a href="${esc(l)}" target="_blank" rel="noopener">🔗 ${esc(l)}</a><span class="x" onclick="delLink(${i})">✕</span></div>`).join('') : '<div class="tm-empty">No links yet</div>'; }
+  function addLink(){ const t=tasks.find(x=>x.id===openId); if(!t)return; const u=prompt('Paste a link (URL):'); if(!u)return; t.links=t.links||[]; t.links.push(u.trim()); save(); renderLinks(t); }
+  function delLink(i){ const t=tasks.find(x=>x.id===openId); if(t&&t.links){ t.links.splice(i,1); save(); renderLinks(t); } }
+  function renderAttach(t){ const el=document.getElementById('tmAtt'); document.getElementById('tmAttCt').textContent=(t.attach||[]).length;
+    el.innerHTML=(t.attach&&t.attach.length)? t.attach.map((a,i)=>`<div class="tm-li"><span>📎 ${esc(a)}</span><span class="x" onclick="delAttach(${i})">✕</span></div>`).join('') : '<div class="tm-empty">No attachments yet</div>'; }
+  function addAttach(){ const t=tasks.find(x=>x.id===openId); if(!t)return; const n=prompt('Attachment name (e.g. plan.pdf):'); if(!n)return; t.attach=t.attach||[]; t.attach.push(n.trim()); save(); renderAttach(t); }
+  function delAttach(i){ const t=tasks.find(x=>x.id===openId); if(t&&t.attach){ t.attach.splice(i,1); save(); renderAttach(t); } }
+
+  // ---- Properties ----
+  function setState(){ const t=tasks.find(x=>x.id===openId); if(t){ t.status=document.getElementById('tmState').value; save(); render(); } }
+  function changeStatus(){ setState(); }
+  function setPrio(){ const t=tasks.find(x=>x.id===openId); if(!t)return; t.priority=document.getElementById('tmPrio').value;
+    document.getElementById('tmTags').innerHTML=(t.createdByDirector?'<span class="pf-tag director">👑 Created by Director</span>':'<span class="pf-tag ops">Operational</span>')+`<span class="pf-tag p-${t.priority}">${t.priority}</span>`;
+    save(); render(); }
+  function setStart(){ const t=tasks.find(x=>x.id===openId); if(t){ t.start=document.getElementById('tmStart').value; save(); } }
+  function setDue(){ const t=tasks.find(x=>x.id===openId); if(t){ t.due=document.getElementById('tmDue').value; save(); render(); } }
+  function renderAssign(t){ const el=document.getElementById('tmAssign');
+    el.innerHTML=ROSTER.map(m=>{ const on=(t.assignees||[]).indexOf(m.i)>=0;
+      return `<button class="tm-chip${on?' on':''}" title="${esc(m.n)}" onclick="toggleAssign('${m.i}')"><span class="tm-cav" style="background:${m.c}">${m.i}</span></button>`; }).join(''); }
+  function toggleAssign(i){ const t=tasks.find(x=>x.id===openId); if(!t)return; t.assignees=t.assignees||[]; const ix=t.assignees.indexOf(i);
+    if(ix>=0)t.assignees.splice(ix,1); else t.assignees.push(i); save(); renderAssign(t); }
+  function renderLabels(t){ const el=document.getElementById('tmLabels');
+    const chips=(t.labels||[]).map((l,i)=>`<span class="tm-lab" style="background:${l.c}22;color:${l.c}">${esc(l.t)}<span class="x" onclick="delLabel(${i})">✕</span></span>`).join('');
+    el.innerHTML=chips+`<input class="tm-lab-in" placeholder="Add label + Enter" onkeydown="if(event.key==='Enter'){addLabel(this.value);this.value='';}">`; }
+  function addLabel(v){ v=(v||'').trim(); if(!v)return; const t=tasks.find(x=>x.id===openId); if(!t)return; t.labels=t.labels||[];
+    t.labels.push({t:v,c:LABCOL[t.labels.length%LABCOL.length]}); save(); renderLabels(t); }
+  function delLabel(i){ const t=tasks.find(x=>x.id===openId); if(t&&t.labels){ t.labels.splice(i,1); save(); renderLabels(t); } }
+
+  // ---- Tabs + activity ----
+  function tmTab(btn,which){ document.querySelectorAll('#taskModal .tm-tab').forEach(b=>b.classList.remove('on')); btn.classList.add('on');
+    document.getElementById('tmPaneProps').style.display = which==='props'?'':'none';
+    document.getElementById('tmPaneAct').style.display = which==='act'?'':'none'; }
+  function tmTabReset(){ const tabs=document.querySelectorAll('#taskModal .tm-tab'); tabs.forEach((b,i)=>b.classList.toggle('on',i===0));
+    document.getElementById('tmPaneProps').style.display=''; document.getElementById('tmPaneAct').style.display='none'; }
+  function renderActivity(t){ const el=document.getElementById('tmPaneAct');
+    const items=(t.milestones||[]).slice().reverse().map(m=>`<div class="tm-act-item">🔹 <div><b>${esc(m.text)}</b><div style="font-size:11px;color:var(--ink3)">${esc(fmtDay(m.ts))}</div></div></div>`).join('');
+    el.innerHTML=items||'<div class="tm-empty">No activity yet.</div>'; }
   function renderThread(t){
     const el=document.getElementById('tmThread');
     const fb=t.feedback||[];
@@ -17153,19 +17364,29 @@ function startLiveClock() {
   }
   function stopRec(){ if(mediaRec&&mediaRec.state==='recording')mediaRec.stop(); clearInterval(recTimer); updateRecUI(false); }
 
-  // ---- Assign task ----
-  function openAssign(){document.getElementById('assignModal').classList.add('open');}
+  // ---- Assign / create task ----
+  function openAssign(){
+    const dir = role==='director';
+    const ti=document.getElementById('asModalTitle'); if(ti) ti.textContent = dir?'＋ Assign New Task':'＋ New Task';
+    const su=document.getElementById('asModalSub'); if(su) su.innerHTML = dir?'Will be tagged <b>“Created by Director”</b>':'Your own task — tracked on your board';
+    document.getElementById('assignModal').classList.add('open');
+  }
   function closeAssign(){document.getElementById('assignModal').classList.remove('open');}
   function createTask(){
     const title=document.getElementById('asTitle').value.trim();if(!title){alert('Please enter a task title.');return;}
+    const now=Date.now(); const isDir = role==='director';
     tasks.unshift({
-      id:'T'+Date.now(),
+      id:'T'+now,
       title,
-      desc:document.getElementById('asDesc').value.trim()||'(No description)',
+      desc:document.getElementById('asDesc').value.trim()||'',
       status:document.getElementById('asStatus').value,
       priority:document.getElementById('asPrio').value,
-      createdByDirector:true, directorUnseen:true,
-      due:null, feedback:[]
+      createdByDirector:isDir, directorUnseen:isDir,
+      createdBy: isDir?'Md Fahim (Director)':EMP.name,
+      createdTs: now,
+      milestones:[{text:'Task Created', ts:now}],
+      assignees:[EMP.initials], links:[], attach:[], labels:[],
+      start:'', due:null, feedback:[]
     });
     save();render();closeAssign();
     document.getElementById('asTitle').value='';document.getElementById('asDesc').value='';
@@ -17215,7 +17436,10 @@ function startLiveClock() {
     Properties:'#0d9488',Construction:'#c2410c'};
 
   // ---- Employees ----
+  // EMP-1042 = the logged-in self-service employee (Imran). Director comments on
+  // his board sync to the employee's own Task → Board (shared localStorage key).
   const EMP = [
+    {id:'EMP-1042',name:'Imran Hossain', role:'Software Engineer',   dept:'IT'},
     {id:'E01',name:'Md Abu Bakkar',     role:'HR Manager',          dept:'HR'},
     {id:'E02',name:'Fatema Akter',      role:'Senior Travels Agent',dept:'Travels'},
     {id:'E03',name:'Narattam Roy Ballav',role:'CRM Team Lead',      dept:'CRM'},
@@ -17359,25 +17583,59 @@ function startLiveClock() {
     renderList();
   }
 
-  // ---- Open employee profile in a NEW TAB ----
-  function openProfile(id){
-    const emp = EMP.find(e=>e.id===id); if(!emp) return;
+  // ---- Build the full task-board HTML document for an employee ----
+  // startRole: 'director' (default — for the Superadmin new tab) or 'employee'
+  //            (for the employee's own embedded board).
+  // lock:      hide the role-switch + Assign button (true employee view).
+  function buildProfileHTML(id, startRole, lock){
+    const emp = EMP.find(e=>e.id===id); if(!emp) return '';
     const payload = {id:emp.id,name:emp.name,role:emp.role,dept:emp.dept,initials:emp.initials,
       color:emp.color, tasks:defaultTasks(emp), stats:genStats(emp), details:genDetails(emp)};
     const tpl = document.getElementById('emp-profile-tpl');
-    if(!tpl){ alert('Profile template missing.'); return; }
+    if(!tpl){ return ''; }
     let html = tpl.textContent
       .replace('__EMP_PAYLOAD__', JSON.stringify(payload).replace(/</g,'\\u003c'))
       .replace(/<\\\/script>/g, '<\/script>');   // un-escape the inner closing tag(s)
+    // Start in the requested role (template ends with setRole('director'))
+    if(startRole && startRole!=='director'){
+      html = html.replace("setRole('director');", "setRole('"+startRole+"');\n  document.title='Task Board — '+EMP.name;");
+    }
+    // Live cross-document sync: when the OTHER side (director tab ↔ employee board)
+    // writes to the shared key, re-read & re-render so comments / glow update live.
+    const liveSync = '<scr'+'ipt>window.addEventListener("storage",function(ev){try{if(ev.key===LSKEY){tasks=loadTasks();render();}}catch(e){}});<\/scr'+'ipt>';
+    html = html.replace('</body>', liveSync+'</body>');
+    // Employee view: lock down director-only controls
+    if(lock){
+      html = html.replace('</head>',
+        '<style>.pf-roleswitch{display:none!important}.pf-btn.ghost{display:none!important}.pf-spacer+div{display:none!important}.pf-top{position:static}</style></head>');
+    }
+    return html;
+  }
+
+  // ---- Open employee profile in a NEW TAB (Superadmin / Director) ----
+  function openProfile(id){
+    const html = buildProfileHTML(id, 'director', false);
+    if(!html){ alert('Profile template missing.'); return; }
     const w = window.open('', '_blank');
     if(!w){ alert('Your browser blocked the new tab. Please allow pop-ups for this page, then click the employee again.'); return; }
     w.document.open(); w.document.write(html); w.document.close();
   }
 
-  // ---- Expose for inline handlers ----
+  // ---- Expose for inline handlers + the ESS employee board ----
   window.empRenderList = renderList;
   window.empFilterDept = filterDept;
   window.openEmployeeProfile = openProfile;
+  window.EpalEmpMgmt = {
+    buildHTML: buildProfileHTML,
+    taskKey: id => 'epal_emp_tasks_' + id,
+    // unseen director comments for an employee (drives the employee's notification badge)
+    unseenCount(id){
+      try{ const raw=localStorage.getItem('epal_emp_tasks_'+id);
+        if(!raw) return (defaultTasks(EMP.find(e=>e.id===id)||{id})||[]).filter(t=>t.directorUnseen).length;
+        return JSON.parse(raw).filter(t=>t.directorUnseen).length;
+      }catch(_){ return 0; }
+    }
+  };
 
   function init(){ renderChips(); renderList(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
@@ -17809,19 +18067,44 @@ function startLiveClock() {
   function emp(){ const dept=curDept(); return {name:'Imran Hosain', id:'EMP-1042', dept, desig:DEPT_DESIG[dept]||'Executive',
       email:'imran.hosain@epalgroup.com', phone:'+880 1712-345678', join:'12 Jan 2024', manager:'Shakib Howlader', address:'House 12, Road 5, Dhanmondi, Dhaka', initials:'IH'}; }
 
+  // Hierarchical employee sidebar (MD: 27-Jun-2026) — operational menu with the
+  // self-service pages nested as sub-sections under the matching parent.
   const NAV=[
     {id:'ess-dashboard', ic:'🏠', label:'Dashboard'},
-    {id:'ess-attendance',ic:'🕐', label:'My Attendance'},
-    {id:'ess-leave',     ic:'🌴', label:'My Leave & Holidays'},
-    {id:'ess-payslip',   ic:'📄', label:'My Payslip'},
-    {id:'ess-advance',   ic:'💰', label:'My Advance Salary'},
-    {id:'ess-requests',  ic:'📨', label:'My Requests'},
-    {id:'ess-tasks',     ic:'✅', label:'My Tasks'},
-    {id:'ess-notices',   ic:'🔔', label:'Notices & Reminders'},
-    {id:'ess-todos',     ic:'📝', label:'Office Todos'},
-    {id:'ess-profile',   ic:'👤', label:'My Profile'}
+    {sec:'Companies'},
+    {company:true, label:'Epal IT'},
+    {sec:'Finance & HR'},
+    {group:'hrm', ic:'🧑‍💼', label:'HRM', kids:[
+      {id:'ess-attendance', ic:'🕐', label:'My Attendance'},
+      {id:'ess-leave',      ic:'🌴', label:'My Leave & Holidays'}
+    ]},
+    {group:'payroll', ic:'💳', label:'Payroll', kids:[
+      {id:'ess-payslip', ic:'📄', label:'My Payslip'},
+      {id:'ess-advance', ic:'💰', label:'My Advance Salary'}
+    ]},
+    {sec:'Operations'},
+    {group:'project', ic:'📊', label:'Project', kids:[
+      {id:'ess-projects', ic:'📁', label:'My Projects'}
+    ]},
+    {group:'require', ic:'🧾', label:'Require', kids:[
+      {id:'ess-requests', ic:'📨', label:'My Requests'}
+    ]},
+    {group:'task', ic:'✅', label:'Task', kids:[
+      {id:'ess-board', ic:'▦', label:'Board'},
+      {id:'ess-tasks', ic:'📋', label:'My Tasks'}
+    ]},
+    {group:'report', ic:'📈', label:'Report', kids:[
+      {id:'ess-reports', ic:'📊', label:'My Reports'}
+    ]},
+    {sec:'Communications'},
+    {id:'ess-notices', ic:'🔔', label:'Reminder'},
+    {id:'ess-todos',   ic:'📝', label:'Office Todos'},
+    {id:'ess-trash',   ic:'🗑', label:'Trash'}
   ];
-  const LABEL={}; NAV.forEach(n=>LABEL[n.id]=n.label);
+  // Flatten to the list of real panels (leaves) + the footer-only Profile page.
+  const LEAVES=[]; (function walk(arr){ arr.forEach(n=>{ if(n.kids) walk(n.kids); else if(n.id) LEAVES.push(n); }); })(NAV);
+  LEAVES.push({id:'ess-profile', ic:'👤', label:'My Profile'});
+  const LABEL={}; LEAVES.forEach(n=>LABEL[n.id]=n.label);
 
   // ---------- Mock own-only data ----------
   const ATT=[
@@ -17934,10 +18217,22 @@ function startLiveClock() {
   function buildNav(){
     const side=document.querySelector('#erp-screen .erp-sidebar'); if(!side || document.getElementById('ess-nav')) return;
     const box=document.createElement('div'); box.id='ess-nav';
-    let html='<div class="ess-sec">My Workspace</div>';
-    NAV.forEach((n,i)=>{
-      html+=`<div class="erp-nav${i===0?' active':''}" data-ess="${n.id}" onclick="EpalESS.show('${n.id}',this)"><span class="erp-nav-icon">${n.ic}</span> ${esc(n.label)}</div>`;
-      if(i===0){ html+=`<div class="ess-sec">My Company</div><div class="erp-nav" id="ess-nav-company" onclick="EpalESS.openCompany(this)"><span class="erp-nav-icon">🏢</span> <span id="ess-company-label">My Company</span></div>`; }
+    let html='';
+    NAV.forEach(n=>{
+      if(n.sec){ html+=`<div class="erp-section-label">${esc(n.sec)}</div>`; return; }
+      if(n.company){
+        html+=`<div class="erp-nav" id="ess-nav-company" onclick="EpalESS.openCompany(this)"><span class="co-mini" style="background:#7c3aed">e</span> <span id="ess-company-label">${esc(n.label)}</span></div>`;
+        return;
+      }
+      if(n.group){
+        const sid='ess-sub-'+n.group;
+        html+=`<div class="erp-nav" onclick="toggleSubmenu(this,'${sid}')"><span class="erp-nav-icon">${n.ic}</span> ${esc(n.label)} <span class="erp-nav-arrow">›</span></div>`;
+        html+=`<div class="erp-submenu" id="${sid}">`;
+        n.kids.forEach(k=>{ html+=`<div class="erp-nav" data-ess="${k.id}" onclick="EpalESS.show('${k.id}',this)"><span class="erp-nav-icon">${k.ic}</span> ${esc(k.label)}</div>`; });
+        html+=`</div>`;
+        return;
+      }
+      html+=`<div class="erp-nav${n.id==='ess-dashboard'?' active':''}" data-ess="${n.id}" onclick="EpalESS.show('${n.id}',this)"><span class="erp-nav-icon">${n.ic}</span> ${esc(n.label)}</div>`;
     });
     box.innerHTML=html;
     const search=side.querySelector('.erp-search');
@@ -18185,7 +18480,274 @@ function startLiveClock() {
       </div>`;
   }
 
-  const RENDER={'ess-dashboard':renderDashboard,'ess-attendance':renderAttendance,'ess-leave':renderLeave,'ess-payslip':renderPayslip,'ess-advance':renderAdvance,'ess-requests':renderRequests,'ess-tasks':renderTasks,'ess-notices':renderNotices,'ess-todos':renderTodos,'ess-profile':renderProfile};
+  /* ═══════════════════════════════════════════════════════════════════════
+     TASK BOARD (Kanban) — fully interactive, saved to localStorage
+     Columns: Note · To Do · Progress · Done · Cancelled
+     Cards are draggable; clicking a card opens the detail drawer (title,
+     rich-text description, links, attachments, assignees, state, priority,
+     start/due dates, labels). (MD: 27-Jun-2026)
+     ═══════════════════════════════════════════════════════════════════════ */
+  const KB_KEY='epalEssBoard_v1';
+  const KB_COLS=[
+    {k:'note',     label:'Note'},
+    {k:'todo',     label:'To Do'},
+    {k:'progress', label:'Progress'},
+    {k:'done',     label:'Done'},
+    {k:'cancelled',label:'Cancelled'}
+  ];
+  const KB_COL_LBL={}; KB_COLS.forEach(c=>KB_COL_LBL[c.k]=c.label);
+  const KB_PRIO=['None','Low','Medium','High','Urgent'];
+  const KB_TEAM=[
+    {n:'Imran Hossain', i:'IH', c:'#7c3aed'},
+    {n:'Shakib Howlader',i:'SH', c:'#2563eb'},
+    {n:'Omit Bhai',     i:'OB', c:'#0d9488'},
+    {n:'Nahin Sorker',  i:'NS', c:'#ea580c'},
+    {n:'Rakib Hasan',   i:'RH', c:'#dc2626'}
+  ];
+  const KB_INIT={}; KB_TEAM.forEach(m=>KB_INIT[m.i]=m);
+  const KB_LABEL_COLORS=['#2563eb','#16a34a','#ea580c','#dc2626','#7c3aed','#0d9488'];
+
+  function kbSeed(){
+    let n=0; const id=()=> 'TK-'+(1001+(n++));
+    return {
+      board:'AI & PLATFORM EXCELLENCE',
+      tasks:[
+        {id:id(),title:'Do all assessment checklist along with the detailed digital asset handover doc',state:'note',prio:'Medium',desc:'',start:'',due:'2026-06-30',assignees:['IH','SH'],labels:[{t:'Note',c:'#7c3aed'}],createdBy:'Imran Hossain',links:[],attach:[]},
+        {id:id(),title:'E-commerce Website Figma Design',state:'note',prio:'High',desc:'',start:'',due:'',assignees:['OB'],labels:[{t:'Design',c:'#2563eb'}],createdBy:'Imran Hossain',links:[],attach:[]},
+        {id:id(),title:'E-commerce Brand & Domain Research',state:'note',prio:'Low',desc:'',start:'',due:'',assignees:['NS'],labels:[],createdBy:'Imran Hossain',links:[],attach:[]},
+        {id:id(),title:'Campaign Video Shoot',state:'todo',prio:'None',desc:'',start:'2026-06-30',due:'2026-06-30',assignees:['IH'],labels:[],createdBy:'Imran Hossain',links:[],attach:[]},
+        {id:id(),title:'Ready HTML UI file or Staging For client',state:'todo',prio:'Medium',desc:'',start:'',due:'2026-06-24',assignees:['SH'],labels:[],createdBy:'Imran Hossain',links:[],attach:[]},
+        {id:id(),title:'Software Access as per Approved Checklist',state:'todo',prio:'High',desc:'',start:'',due:'',assignees:['OB'],labels:[],createdBy:'Imran Hossain',links:[],attach:[]},
+        {id:id(),title:'UI Creation of Task Card, with Sub Task / Milestone',state:'progress',prio:'High',desc:'',start:'',due:'2026-06-27',assignees:['IH','RH'],labels:[],createdBy:'Imran Hossain',links:[],attach:[]},
+        {id:id(),title:'Research about International Payment method',state:'progress',prio:'Medium',desc:'',start:'',due:'2026-06-19',assignees:['NS'],labels:[],createdBy:'Imran Hossain',links:[],attach:[]},
+        {id:id(),title:'Setting up facebook group, pages, and whatsapp auto reply',state:'progress',prio:'Low',desc:'',start:'',due:'2026-06-27',assignees:['OB'],labels:[],createdBy:'Imran Hossain',links:[],attach:[]},
+        {id:id(),title:'Eon Data Read and Assistance Feature with Self Aware Demand Controlling',state:'done',prio:'High',desc:'',start:'',due:'2026-06-27',assignees:['IH','SH'],labels:[],createdBy:'Imran Hossain',links:[],attach:[]},
+        {id:id(),title:'Eon API, using php, python and LLM RAG model',state:'done',prio:'Medium',desc:'',start:'',due:'2026-06-25',assignees:['SH'],labels:[],createdBy:'Imran Hossain',links:[],attach:[]},
+        {id:id(),title:'Finalize 2 shots preparation',state:'done',prio:'Low',desc:'',start:'',due:'2026-06-25',assignees:['NS'],labels:[{t:'Marketing',c:'#16a34a'}],createdBy:'Imran Hossain',links:[],attach:[]},
+        {id:id(),title:'Prepare Central Management Laptop',state:'cancelled',prio:'Low',desc:'',start:'',due:'',assignees:['RH'],labels:[],createdBy:'Imran Hossain',links:[],attach:[]},
+        {id:id(),title:'Complete Digital Asset Ownership & Developer Handover',state:'cancelled',prio:'Medium',desc:'',start:'',due:'2026-06-06',assignees:['IH','OB'],labels:[],createdBy:'Imran Hossain',links:[],attach:[]}
+      ],
+      seq:1001+n
+    };
+  }
+  let kb=null;
+  function kbLoad(){ if(kb) return kb; try{ kb=JSON.parse(localStorage.getItem(KB_KEY)); }catch(_){ kb=null; } if(!kb||!kb.tasks){ kb=kbSeed(); kbSave(); } return kb; }
+  function kbSave(){ try{ localStorage.setItem(KB_KEY, JSON.stringify(kb)); }catch(_){ } }
+  function kbTask(id){ return kbLoad().tasks.find(t=>t.id===id); }
+  function kbNextId(){ const d=kbLoad(); const id='TK-'+(d.seq||1001); d.seq=(d.seq||1001)+1; return id; }
+
+  function kbAvatars(arr){
+    return (arr||[]).map(i=>{ const m=KB_INIT[i]; const c=m?m.c:'#64748b'; const lab=m?m.i:i;
+      return `<span class="kb-av" style="background:${c}" title="${esc(m?m.n:i)}">${esc(lab)}</span>`; }).join('');
+  }
+  function kbPrioDots(p){
+    const lvl=Math.max(0,KB_PRIO.indexOf(p)); const col=['#94a3b8','#16a34a','#d97706','#dc2626','#dc2626'][lvl]||'#94a3b8';
+    let bars=''; for(let i=1;i<=4;i++){ bars+=`<span class="b" style="height:${4+i*2}px;background:${i<=lvl?col:'var(--border2)'}"></span>`; }
+    return `<span class="kb-prio" title="Priority: ${esc(p)}">${bars}</span>`;
+  }
+  function kbDate(d){ if(!d) return ''; const dt=new Date(d+'T00:00:00'); if(isNaN(dt)) return esc(d);
+    return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}); }
+
+  function kbCard(t){
+    const stateCls='kb-pill '+t.state;
+    const labels=(t.labels||[]).map(l=>`<span class="kb-tag" style="background:${l.c}22;color:${l.c}">${esc(l.t)}</span>`).join('');
+    return `<div class="kb-card" draggable="true" data-id="${t.id}"
+        ondragstart="EpalESS.kbDragStart(event,'${t.id}')" ondragend="EpalESS.kbDragEnd(event)"
+        onclick="EpalESS.kbOpen('${t.id}')">
+        <div class="kb-card-title">${esc(t.title)}</div>
+        <div class="kb-card-meta">
+          <span class="${stateCls}">${esc(KB_COL_LBL[t.state]||t.state)}</span>
+          ${kbPrioDots(t.prio)}
+        </div>
+        <div class="kb-card-foot">
+          ${t.due?`<span class="kb-due">📅 ${kbDate(t.due)}</span>`:'<span></span>'}
+          <span class="kb-foot-right">${labels}${kbAvatars(t.assignees)}</span>
+        </div>
+      </div>`;
+  }
+  function kbColumnsHTML(){
+    const d=kbLoad();
+    return KB_COLS.map(c=>{
+      const items=d.tasks.filter(t=>t.state===c.k);
+      const cards=items.map(kbCard).join('') || '<div class="kb-empty">Drop tasks here</div>';
+      return `<div class="kb-col" data-col="${c.k}"
+          ondragover="EpalESS.kbDragOver(event)" ondragleave="EpalESS.kbDragLeave(event)" ondrop="EpalESS.kbDrop(event,'${c.k}')">
+          <div class="kb-col-head ${c.k}">
+            <span class="kb-col-name">${esc(c.label)} <span class="kb-col-count">${items.length}</span></span>
+            <button class="kb-add" title="Add task" onclick="event.stopPropagation();EpalESS.kbAdd('${c.k}')">＋</button>
+          </div>
+          <div class="kb-col-body">${cards}</div>
+        </div>`;
+    }).join('');
+  }
+  // The employee's own Task → Board IS the shared director/employee board, hosted
+  // in an iframe of the emp-profile-tpl (started in employee mode). Director comments
+  // made from Employee Management land here live via the shared localStorage key.
+  const SELF_EMP_ID='EMP-1042';
+  function renderBoard(){
+    const p=panel('ess-board');
+    p.innerHTML = `<iframe id="ess-board-frame" class="essb-frame" title="My Task Board"></iframe>`;
+    const fr=document.getElementById('ess-board-frame');
+    const html=(window.EpalEmpMgmt && EpalEmpMgmt.buildHTML) ? EpalEmpMgmt.buildHTML(SELF_EMP_ID,'employee',true) : '';
+    if(fr){ if('srcdoc' in fr){ fr.srcdoc=html; } else { fr.contentWindow.document.open(); fr.contentWindow.document.write(html); fr.contentWindow.document.close(); } }
+    updateTaskBadge();
+  }
+  // ---- Notification badge: unseen director comments on the employee's board ----
+  function essBadge(el,n){
+    if(!el) return;
+    let b=el.querySelector('.ess-attn-badge');
+    if(n>0){
+      if(!b){ b=document.createElement('span'); b.className='erp-nav-badge ess-attn-badge';
+        const arrow=el.querySelector('.erp-nav-arrow'); if(arrow) el.insertBefore(b,arrow); else el.appendChild(b); }
+      b.textContent=n;
+    } else if(b){ b.remove(); }
+  }
+  function updateTaskBadge(){
+    const n=(window.EpalEmpMgmt && EpalEmpMgmt.unseenCount)? EpalEmpMgmt.unseenCount(SELF_EMP_ID):0;
+    essBadge(document.querySelector('#ess-nav [onclick*="ess-sub-task"]'), n);
+    essBadge(document.querySelector('#ess-nav [data-ess="ess-board"]'), n);
+  }
+  function kbRefresh(){ const wrap=document.getElementById('ess-kb'); if(wrap) wrap.innerHTML=kbColumnsHTML(); }
+  function kbRefresh(){ const wrap=document.getElementById('ess-kb'); if(wrap) wrap.innerHTML=kbColumnsHTML(); }
+
+  // ---- Detail drawer ----
+  function kbDrawerHTML(){
+    return `<div class="kb-drawer-overlay" id="kb-overlay" onclick="EpalESS.kbClose()"></div>
+      <aside class="kb-drawer" id="kb-drawer"><div id="kb-drawer-body"></div></aside>`;
+  }
+  function kbOptionList(arr,val){ return arr.map(o=>`<option ${o===val?'selected':''}>${esc(o)}</option>`).join(''); }
+  function kbDrawerBody(t){
+    const assignChips = KB_TEAM.map(m=>{ const on=(t.assignees||[]).indexOf(m.i)>=0;
+      return `<button class="kb-assign ${on?'on':''}" onclick="EpalESS.kbToggleAssignee('${t.id}','${m.i}')" title="${esc(m.n)}"><span class="kb-av" style="background:${m.c}">${m.i}</span></button>`; }).join('');
+    const labelChips=(t.labels||[]).map((l,i)=>`<span class="kb-tag" style="background:${l.c}22;color:${l.c}">${esc(l.t)} <span class="kb-tag-x" onclick="EpalESS.kbDelLabel('${t.id}',${i})">✕</span></span>`).join('');
+    const linkList=(t.links||[]).length? t.links.map((l,i)=>`<div class="kb-li"><a href="${esc(l)}" target="_blank" rel="noopener">🔗 ${esc(l)}</a><span class="kb-li-x" onclick="EpalESS.kbDelLink('${t.id}',${i})">✕</span></div>`).join('') : '<div class="kb-li-empty">No links yet</div>';
+    const attList=(t.attach||[]).length? t.attach.map((a,i)=>`<div class="kb-li"><span>📎 ${esc(a)}</span><span class="kb-li-x" onclick="EpalESS.kbDelAttach('${t.id}',${i})">✕</span></div>`).join('') : '<div class="kb-li-empty">No attachments yet</div>';
+    return `<div class="kb-dwr-head">
+        <span class="kb-dwr-id">${esc(t.id)}</span>
+        <button class="kb-dwr-close" title="Close" onclick="EpalESS.kbClose()">✕</button>
+      </div>
+      <textarea class="kb-dwr-title" rows="1" placeholder="Task title"
+        oninput="EpalESS.kbSet('${t.id}','title',this.value)">${esc(t.title)}</textarea>
+
+      <div class="kb-rte">
+        <div class="kb-rte-bar">
+          <button onmousedown="event.preventDefault()" onclick="document.execCommand('bold')"><b>B</b></button>
+          <button onmousedown="event.preventDefault()" onclick="document.execCommand('italic')"><i>I</i></button>
+          <button onmousedown="event.preventDefault()" onclick="document.execCommand('underline')"><u>U</u></button>
+          <button onmousedown="event.preventDefault()" onclick="document.execCommand('strikeThrough')"><s>S</s></button>
+          <button onmousedown="event.preventDefault()" onclick="document.execCommand('insertUnorderedList')">≡</button>
+          <button onmousedown="event.preventDefault()" onclick="document.execCommand('formatBlock',false,'pre')">&lt;/&gt;</button>
+        </div>
+        <div class="kb-rte-area" contenteditable="true" data-ph="Add a description…"
+          onblur="EpalESS.kbSet('${t.id}','desc',this.innerHTML)">${t.desc||''}</div>
+      </div>
+
+      <div class="kb-dwr-actions">
+        <button class="erp-btn btn-ghost btn-sm" onclick="EpalESS.kbAddLink('${t.id}')">🔗 Add link</button>
+        <button class="erp-btn btn-ghost btn-sm" onclick="EpalESS.kbAddAttach('${t.id}')">📎 Attach</button>
+      </div>
+
+      <div class="kb-acc"><div class="kb-acc-head">Links <span>${(t.links||[]).length}</span></div><div class="kb-acc-body">${linkList}</div></div>
+      <div class="kb-acc"><div class="kb-acc-head">Attachments <span>${(t.attach||[]).length}</span></div><div class="kb-acc-body">${attList}</div></div>
+
+      <div class="kb-tabs">
+        <button class="kb-tab active" onclick="EpalESS.kbTab(this,'props')">Properties</button>
+        <button class="kb-tab" onclick="EpalESS.kbTab(this,'activity')">Activity</button>
+      </div>
+
+      <div class="kb-tabpane" data-pane="props">
+        <div class="kb-prop"><label>👥 Assignees</label><div class="kb-assign-row">${assignChips}</div></div>
+        <div class="kb-prop"><label>🚩 State</label>
+          <select onchange="EpalESS.kbSet('${t.id}','state',this.value)">${KB_COLS.map(c=>`<option value="${c.k}" ${t.state===c.k?'selected':''}>${esc(c.label)}</option>`).join('')}</select>
+        </div>
+        <div class="kb-prop"><label>📊 Priority</label>
+          <select onchange="EpalESS.kbSet('${t.id}','prio',this.value)">${kbOptionList(KB_PRIO,t.prio)}</select>
+        </div>
+        <div class="kb-prop"><label>👤 Created by</label><div class="kb-prop-val">${esc(t.createdBy||'—')}</div></div>
+        <div class="kb-prop"><label>📅 Start date</label><input type="date" value="${esc(t.start||'')}" onchange="EpalESS.kbSet('${t.id}','start',this.value)"></div>
+        <div class="kb-prop"><label>📅 Due date</label><input type="date" value="${esc(t.due||'')}" onchange="EpalESS.kbSet('${t.id}','due',this.value)"></div>
+        <div class="kb-prop"><label>🏷 Labels</label>
+          <div class="kb-label-row">${labelChips}
+            <input class="kb-label-in" placeholder="Add label + Enter" onkeydown="if(event.key==='Enter'){EpalESS.kbAddLabel('${t.id}',this.value);this.value='';}">
+          </div>
+        </div>
+        <div class="kb-prop"><button class="erp-btn btn-ghost btn-sm kb-del" onclick="EpalESS.kbDel('${t.id}')">🗑 Delete task</button></div>
+      </div>
+      <div class="kb-tabpane" data-pane="activity" style="display:none">
+        <div class="kb-act"><span class="kb-av" style="background:#7c3aed">IH</span> <div>Task created by <b>${esc(t.createdBy||'—')}</b><div class="kb-act-t">Last edited just now</div></div></div>
+      </div>`;
+  }
+  let kbOpenId=null;
+  function kbOpenDrawer(id){
+    const t=kbTask(id); if(!t) return; kbOpenId=id;
+    const body=document.getElementById('kb-drawer-body'); if(body) body.innerHTML=kbDrawerBody(t);
+    document.getElementById('kb-drawer').classList.add('open');
+    document.getElementById('kb-overlay').classList.add('open');
+  }
+  function kbCloseDrawer(){ kbOpenId=null;
+    const dr=document.getElementById('kb-drawer'); if(dr) dr.classList.remove('open');
+    const ov=document.getElementById('kb-overlay'); if(ov) ov.classList.remove('open');
+  }
+
+  // ---- Lightweight Operations panels (Project / Report / Trash) ----
+  function renderProjects(){
+    const PROJ=[
+      ['Epal E-commerce Platform','In Progress',68,'30 Jul 2026','warn'],
+      ['ERP — Role Based Access','In Progress',82,'12 Jul 2026','warn'],
+      ['Eon AI Assistant','Planning',15,'30 Aug 2026','info'],
+      ['Travels Booking Revamp','Completed',100,'10 Jun 2026','ok']
+    ];
+    panel('ess-projects').innerHTML =
+      header('My Projects','Projects you are assigned to — progress is updated by your manager') +
+      `<div class="ess-grid">
+        <div class="ess-card"><div class="lbl">📁 Active</div><div class="val">3</div><div class="meta">in progress / planning</div></div>
+        <div class="ess-card"><div class="lbl">✅ Completed</div><div class="val">1</div><div class="meta">this quarter</div></div>
+        <div class="ess-card"><div class="lbl">⏰ Due Soon</div><div class="val">2</div><div class="meta">within 30 days</div></div>
+        <div class="ess-card"><div class="lbl">👥 Teams</div><div class="val">4</div><div class="meta">cross-company</div></div>
+      </div>
+      <div class="ess-box"><h3>📁 Project Assignments</h3>
+        <table class="ess-table"><thead><tr><th>Project</th><th>Status</th><th>Progress</th><th>Deadline</th></tr></thead><tbody>
+        ${rows(PROJ, r=>`<td style="font-weight:600">${esc(r[0])}</td><td><span class="ess-pill ${r[4]}">${esc(r[1])}</span></td>
+          <td><div style="background:var(--bg3);border-radius:20px;height:8px;width:120px;overflow:hidden"><div style="height:100%;width:${r[2]}%;background:var(--accent)"></div></div><span style="font-size:11px;color:var(--text3)">${r[2]}%</span></td>
+          <td>${esc(r[3])}</td>`)}
+        </tbody></table>
+      </div>`;
+  }
+  function renderReports(){
+    panel('ess-reports').innerHTML =
+      header('My Reports','Your own attendance and task summaries — own records only') +
+      `<div class="ess-2col">
+        <div class="ess-box"><h3>📅 My Attendance — June 2026</h3>
+          <div class="ess-bal">
+            <div class="b"><div class="n">13</div><div class="t">Present</div></div>
+            <div class="b"><div class="n">2</div><div class="t">Late</div></div>
+            <div class="b"><div class="n">1</div><div class="t">Leave</div></div>
+            <div class="b"><div class="n">1</div><div class="t">Absent</div></div>
+          </div>
+          <button class="erp-btn btn-ghost btn-sm" style="margin-top:12px" onclick="alert('Exporting attendance report…')">⬇ Export</button>
+        </div>
+        <div class="ess-box"><h3>✅ My Task Summary</h3>
+          <div class="ess-bal">
+            <div class="b"><div class="n">${kbLoad().tasks.filter(t=>t.state==='todo').length}</div><div class="t">To Do</div></div>
+            <div class="b"><div class="n">${kbLoad().tasks.filter(t=>t.state==='progress').length}</div><div class="t">Progress</div></div>
+            <div class="b"><div class="n">${kbLoad().tasks.filter(t=>t.state==='done').length}</div><div class="t">Done</div></div>
+            <div class="b"><div class="n">${kbLoad().tasks.filter(t=>t.state==='cancelled').length}</div><div class="t">Cancelled</div></div>
+          </div>
+          <button class="erp-btn btn-primary btn-sm" style="margin-top:12px" onclick="EpalESS.show('ess-board')">▦ Open Board</button>
+        </div>
+      </div>`;
+  }
+  function renderTrash(){
+    panel('ess-trash').innerHTML =
+      header('Trash','Recently deleted items are kept here for 30 days') +
+      `<div class="ess-box" style="text-align:center;padding:46px 20px">
+        <div style="font-size:42px">🗑</div>
+        <h3 style="justify-content:center;margin-top:10px">Trash is empty</h3>
+        <p style="color:var(--text3);font-size:13px">Deleted tasks and notes will appear here, and can be restored within 30 days.</p>
+      </div>`;
+  }
+
+  const RENDER={'ess-dashboard':renderDashboard,'ess-attendance':renderAttendance,'ess-leave':renderLeave,'ess-payslip':renderPayslip,'ess-advance':renderAdvance,'ess-requests':renderRequests,'ess-tasks':renderTasks,'ess-notices':renderNotices,'ess-todos':renderTodos,'ess-profile':renderProfile,'ess-board':renderBoard,'ess-projects':renderProjects,'ess-reports':renderReports,'ess-trash':renderTrash};
   let built=false;
   function buildPanels(){ if(built) return; for(const id in RENDER){ panel(id); RENDER[id](); } built=true; }
 
@@ -18204,8 +18766,36 @@ function startLiveClock() {
     // breadcrumb + nav highlight
     const t=document.getElementById('erp-panel-title'); if(t) t.textContent = LABEL[id]||'';
     document.querySelectorAll('#erp-screen .erp-sidebar .erp-nav').forEach(n=>n.classList.remove('active'));
-    const nav = el || document.querySelector('#ess-nav [data-ess="'+id+'"]'); if(nav) nav.classList.add('active');
+    const nav = el || document.querySelector('#ess-nav [data-ess="'+id+'"]'); if(nav){
+      nav.classList.add('active');
+      // open the parent group submenu so the active row stays visible
+      const sub=nav.closest('.erp-submenu');
+      if(sub){ sub.classList.add('open'); const par=sub.previousElementSibling; if(par&&par.classList.contains('erp-nav')) par.classList.add('open'); }
+    }
+    setFooter();
+    updateTaskBadge();
     if(window.qtSyncActive){ try{ window.qtSyncActive(); }catch(_){ } }
+  }
+  // Employee footer identity (the RBAC layer sets a generic "Employee" label; we
+  // restore the named employee + wire the footer to open the profile page).
+  function setFooter(){
+    const e=emp();
+    const fName=document.querySelector('#erp-screen .erp-sidebar .erp-user-name');
+    const fRole=document.querySelector('#erp-screen .erp-sidebar .erp-user-role');
+    const fAv  =document.querySelector('#erp-screen .erp-sidebar .erp-avatar');
+    const fUser=document.querySelector('#erp-screen .erp-sidebar .erp-user');
+    if(fName) fName.textContent='Mr. '+e.name;
+    if(fRole) fRole.textContent='Employee';
+    if(fAv)   fAv.textContent=e.initials;
+    // topbar identity (RBAC sets a generic "Employee" label; restore the named user)
+    const tAv=document.querySelector('#erp-screen .erp-topbar-right .erp-avatar');
+    if(tAv){ tAv.textContent=e.initials; const box=tAv.nextElementSibling;
+      if(box){ const ds=box.querySelectorAll('div'); if(ds[0]) ds[0].textContent='Mr. '+e.name; if(ds[1]) ds[1].textContent='Employee'; } }
+    if(fUser && !fUser.dataset.essWired){
+      fUser.dataset.essWired='1';
+      const id=fUser.querySelector('.erp-user-name, .erp-avatar');
+      fUser.querySelectorAll('.erp-user-name, .erp-avatar').forEach(x=>{ x.style.cursor='pointer'; x.title='My Profile'; x.addEventListener('click',ev=>{ ev.stopPropagation(); show('ess-profile'); }); });
+    }
   }
   // "My Company" — open the employee's own company workspace in the limited (finance-free) view
   function openCompany(el){
@@ -18220,8 +18810,10 @@ function startLiveClock() {
     const nav=document.getElementById('ess-nav-company');
     const sec=nav?nav.previousElementSibling:null;
     if(nav) nav.style.display = co ? '' : 'none';
-    if(sec && sec.classList.contains('ess-sec')) sec.style.display = co ? '' : 'none';
-    const lbl=document.getElementById('ess-company-label'); if(lbl) lbl.textContent = curDept();
+    if(sec && sec.classList.contains('erp-section-label')) sec.style.display = co ? '' : 'none';
+    // Short company label, e.g. "Epal IT Solutions" → "Epal IT"
+    const lbl=document.getElementById('ess-company-label');
+    if(lbl){ const d=curDept(); lbl.textContent = d.replace(/\s+Solutions$/,'').replace(/\s+Interiors$/,''); }
   }
 
   // ---------- Activate / deactivate ----------
@@ -18230,26 +18822,161 @@ function startLiveClock() {
     updateCompanyNav();
     document.getElementById('erp-screen').classList.add('ess-mode');
     show('ess-dashboard');
+    updateTaskBadge();
   }
   function deactivate(){ const s=document.getElementById('erp-screen'); if(s) s.classList.remove('ess-mode'); }
   function home(){ activate(); }
+
+  // ---------- Kanban helpers (mutations persist + refresh board / drawer) ----------
+  function kbUpdate(id,refreshDrawer){ kbSave(); kbRefresh(); if(refreshDrawer && kbOpenId===id){ const b=document.getElementById('kb-drawer-body'); const t=kbTask(id); if(b&&t) b.innerHTML=kbDrawerBody(t); } }
 
   // ---------- Public API ----------
   window.EpalESS = {
     show, activate, deactivate, home, openCompany, isEss:id=>!!RENDER[id],
     addTodo(){ const i=document.getElementById('ess-todo-input'); if(!i||!i.value.trim())return; todos.push({t:i.value.trim(),d:false}); saveTodos(); i.value=''; refreshTodos(); },
     toggleTodo(i){ if(todos[i]){ todos[i].d=!todos[i].d; saveTodos(); refreshTodos(); } },
-    delTodo(i){ todos.splice(i,1); saveTodos(); refreshTodos(); }
+    delTodo(i){ todos.splice(i,1); saveTodos(); refreshTodos(); },
+
+    // ----- Task board: drag & drop -----
+    kbDragStart(ev,id){ ev.dataTransfer.setData('text/plain',id); ev.dataTransfer.effectAllowed='move';
+      const c=ev.currentTarget; setTimeout(()=>c.classList.add('dragging'),0); },
+    kbDragEnd(ev){ ev.currentTarget.classList.remove('dragging'); document.querySelectorAll('.kb-col.over').forEach(c=>c.classList.remove('over')); },
+    kbDragOver(ev){ ev.preventDefault(); ev.dataTransfer.dropEffect='move'; const col=ev.currentTarget; col.classList.add('over'); },
+    kbDragLeave(ev){ if(ev.currentTarget===ev.target) ev.currentTarget.classList.remove('over'); },
+    kbDrop(ev,colKey){ ev.preventDefault(); ev.currentTarget.classList.remove('over');
+      const id=ev.dataTransfer.getData('text/plain'); const t=kbTask(id);
+      if(t && t.state!==colKey){ t.state=colKey; kbUpdate(id,true); } },
+
+    // ----- Task board: add / open / edit / delete -----
+    kbAdd(colKey){ const d=kbLoad(); const t={id:kbNextId(),title:'',state:colKey||'todo',prio:'None',desc:'',start:'',due:'',assignees:['IH'],labels:[],createdBy:emp().name,links:[],attach:[]};
+      d.tasks.unshift(t); kbSave(); kbRefresh(); kbOpenDrawer(t.id);
+      setTimeout(()=>{ const ta=document.querySelector('.kb-dwr-title'); if(ta) ta.focus(); },60); },
+    kbOpen(id){ kbOpenDrawer(id); },
+    kbClose(){ const t=kbOpenId?kbTask(kbOpenId):null; if(t&&!t.title.trim()){ /* drop empty card */ const d=kbLoad(); d.tasks=d.tasks.filter(x=>x.id!==t.id); kbSave(); kbRefresh(); } kbCloseDrawer(); },
+    kbSet(id,field,val){ const t=kbTask(id); if(!t) return; t[field]=val; kbSave();
+      // structural fields need a board redraw; title/desc just need the card text
+      if(field==='state'||field==='prio'||field==='due'||field==='title'){ kbRefresh(); } },
+    kbDel(id){ if(!confirm('Delete this task?')) return; const d=kbLoad(); d.tasks=d.tasks.filter(x=>x.id!==id); kbSave(); kbRefresh(); kbCloseDrawer(); },
+    kbToggleAssignee(id,init){ const t=kbTask(id); if(!t) return; t.assignees=t.assignees||[]; const ix=t.assignees.indexOf(init);
+      if(ix>=0) t.assignees.splice(ix,1); else t.assignees.push(init); kbUpdate(id,true); },
+    kbAddLabel(id,txt){ txt=(txt||'').trim(); if(!txt) return; const t=kbTask(id); if(!t) return; t.labels=t.labels||[];
+      const c=KB_LABEL_COLORS[t.labels.length % KB_LABEL_COLORS.length]; t.labels.push({t:txt,c}); kbUpdate(id,true); },
+    kbDelLabel(id,ix){ const t=kbTask(id); if(t&&t.labels){ t.labels.splice(ix,1); kbUpdate(id,true); } },
+    kbAddLink(id){ const u=prompt('Paste a link (URL):'); if(!u) return; const t=kbTask(id); if(!t) return; t.links=t.links||[]; t.links.push(u.trim()); kbUpdate(id,true); },
+    kbDelLink(id,ix){ const t=kbTask(id); if(t&&t.links){ t.links.splice(ix,1); kbUpdate(id,true); } },
+    kbAddAttach(id){ const n=prompt('Attachment name (e.g. design.pdf):'); if(!n) return; const t=kbTask(id); if(!t) return; t.attach=t.attach||[]; t.attach.push(n.trim()); kbUpdate(id,true); },
+    kbDelAttach(id,ix){ const t=kbTask(id); if(t&&t.attach){ t.attach.splice(ix,1); kbUpdate(id,true); } },
+    kbTab(btn,pane){ const dr=document.getElementById('kb-drawer'); if(!dr) return;
+      dr.querySelectorAll('.kb-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+      dr.querySelectorAll('.kb-tabpane').forEach(p=>p.style.display = p.getAttribute('data-pane')===pane?'':'none'); }
   };
 
   // Register ESS panels with the core navigator so showErpPanel() also clears them
   function registerPanels(){
-    try{ if(typeof erpPanels!=='undefined'){ NAV.forEach(n=>{ if(erpPanels.indexOf(n.id)<0) erpPanels.push(n.id); }); } }catch(_){ }
-    try{ if(typeof erpTitles!=='undefined'){ NAV.forEach(n=>{ erpTitles[n.id]=n.label; }); } }catch(_){ }
+    try{ if(typeof erpPanels!=='undefined'){ LEAVES.forEach(n=>{ if(erpPanels.indexOf(n.id)<0) erpPanels.push(n.id); }); } }catch(_){ }
+    try{ if(typeof erpTitles!=='undefined'){ LEAVES.forEach(n=>{ erpTitles[n.id]=n.label; }); } }catch(_){ }
+  }
+
+  // ---------- Task-board styles (board + detail drawer) ----------
+  function injectBoardStyles(){
+    if(document.getElementById('ess-board-styles')) return;
+    const css=`
+      .kb-top{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+      .kb-board-pick{display:flex;align-items:center;gap:9px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:5px 12px;}
+      .kb-board-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);}
+      .kb-board-sel{border:none;background:transparent;color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;outline:none;}
+      .kb-top .erp-btn{margin-left:auto;}
+      .kb-board{display:flex;gap:14px;align-items:flex-start;overflow-x:auto;padding-bottom:8px;}
+      .kb-col{flex:1 1 0;min-width:236px;background:var(--bg3);border-radius:13px;padding:11px;display:flex;flex-direction:column;}
+      .kb-col.over{outline:2px dashed var(--accent);outline-offset:-2px;background:rgba(124,58,237,.06);}
+      .kb-col-head{display:flex;align-items:center;justify-content:space-between;padding:3px 4px 11px;border-bottom:2px solid transparent;}
+      .kb-col-head.note{border-color:#7c3aed;} .kb-col-head.todo{border-color:#2563eb;}
+      .kb-col-head.progress{border-color:#d97706;} .kb-col-head.done{border-color:#16a34a;} .kb-col-head.cancelled{border-color:#dc2626;}
+      .kb-col-name{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);display:flex;align-items:center;gap:7px;}
+      .kb-col-count{background:var(--bg2);color:var(--text2);font-size:11px;border-radius:20px;padding:1px 8px;border:1px solid var(--border);}
+      .kb-add{border:none;background:none;color:var(--text3);font-size:17px;cursor:pointer;line-height:1;padding:2px 5px;border-radius:6px;}
+      .kb-add:hover{background:var(--bg2);color:var(--accent);}
+      .kb-col-body{margin-top:10px;overflow-y:auto;max-height:calc(100vh - 252px);min-height:40px;}
+      .kb-empty{font-size:11.5px;color:var(--text3);text-align:center;padding:18px 6px;border:1.5px dashed var(--border);border-radius:9px;}
+      .kb-card{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:12px;margin-bottom:10px;box-shadow:var(--shadow);cursor:pointer;transition:transform .08s,box-shadow .12s;}
+      .kb-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.10);transform:translateY(-1px);}
+      .kb-card.dragging{opacity:.45;}
+      .kb-card-title{font-size:13px;font-weight:600;color:var(--text);line-height:1.4;}
+      .kb-card-meta{display:flex;align-items:center;gap:10px;margin-top:9px;}
+      .kb-pill{font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px;}
+      .kb-pill.note{background:rgba(124,58,237,.13);color:#7c3aed;} .kb-pill.todo{background:rgba(37,99,235,.13);color:#2563eb;}
+      .kb-pill.progress{background:rgba(217,119,6,.15);color:#d97706;} .kb-pill.done{background:rgba(22,163,74,.14);color:#16a34a;} .kb-pill.cancelled{background:rgba(220,38,38,.13);color:#dc2626;}
+      .kb-prio{display:inline-flex;align-items:flex-end;gap:2px;height:12px;} .kb-prio .b{width:3px;border-radius:1px;}
+      .kb-card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:11px;gap:8px;}
+      .kb-due{font-size:11px;color:var(--text3);white-space:nowrap;}
+      .kb-foot-right{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
+      .kb-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;}
+      .kb-av{width:22px;height:22px;border-radius:50%;color:#fff;font-size:9.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;letter-spacing:.3px;border:2px solid var(--bg2);margin-left:-6px;}
+      .kb-av:first-child{margin-left:0;}
+      /* ----- Detail drawer ----- */
+      .kb-drawer-overlay{position:fixed;inset:0;background:rgba(15,23,42,.32);opacity:0;visibility:hidden;transition:opacity .2s;z-index:1400;}
+      .kb-drawer-overlay.open{opacity:1;visibility:visible;}
+      .kb-drawer{position:fixed;top:0;right:0;height:100vh;width:412px;max-width:94vw;background:var(--bg2);border-left:1px solid var(--border);
+        box-shadow:-12px 0 34px rgba(0,0,0,.16);transform:translateX(100%);transition:transform .24s ease;z-index:1401;overflow-y:auto;}
+      .kb-drawer.open{transform:translateX(0);}
+      #kb-drawer-body{padding:20px 22px 40px;}
+      .kb-dwr-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+      .kb-dwr-id{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--text3);background:var(--bg3);border-radius:6px;padding:3px 9px;}
+      .kb-dwr-close{border:none;background:none;font-size:17px;color:var(--text3);cursor:pointer;border-radius:7px;padding:3px 8px;}
+      .kb-dwr-close:hover{background:var(--bg3);color:var(--text);}
+      .kb-dwr-title{width:100%;box-sizing:border-box;border:none;background:transparent;resize:none;font-family:inherit;font-size:18px;font-weight:700;color:var(--text);outline:none;padding:4px 2px;line-height:1.35;overflow:hidden;}
+      .kb-dwr-title:focus{background:var(--bg3);border-radius:8px;}
+      .kb-rte{border:1px solid var(--border2);border-radius:10px;margin-top:8px;overflow:hidden;}
+      .kb-rte-bar{display:flex;gap:2px;background:var(--bg3);border-bottom:1px solid var(--border);padding:5px 6px;flex-wrap:wrap;}
+      .kb-rte-bar button{border:none;background:none;width:28px;height:26px;border-radius:6px;cursor:pointer;color:var(--text2);font-size:13px;}
+      .kb-rte-bar button:hover{background:var(--bg2);color:var(--text);}
+      .kb-rte-area{min-height:84px;padding:11px 13px;font-size:13px;color:var(--text);outline:none;line-height:1.6;}
+      .kb-rte-area:empty:before{content:attr(data-ph);color:var(--text3);}
+      .kb-rte-area pre{background:var(--bg3);padding:8px 10px;border-radius:7px;font-size:12px;overflow:auto;}
+      .kb-dwr-actions{display:flex;gap:9px;margin:13px 0;}
+      .kb-acc{border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+      .kb-acc-head{background:var(--bg3);padding:9px 13px;font-size:12.5px;font-weight:600;color:var(--text);display:flex;justify-content:space-between;}
+      .kb-acc-head span{color:var(--text3);font-weight:700;}
+      .kb-acc-body{padding:9px 13px;}
+      .kb-li{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;padding:5px 0;color:var(--text);}
+      .kb-li a{color:var(--accent);text-decoration:none;word-break:break-all;} .kb-li a:hover{text-decoration:underline;}
+      .kb-li-x,.kb-tag-x{cursor:pointer;color:var(--text3);font-size:11px;} .kb-li-x:hover,.kb-tag-x:hover{color:var(--red);}
+      .kb-li-empty{font-size:12px;color:var(--text3);text-align:center;padding:7px;}
+      .kb-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin:18px 0 14px;}
+      .kb-tab{border:none;background:none;padding:8px 14px;font-family:inherit;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+      .kb-tab.active{color:var(--accent);border-color:var(--accent);}
+      .kb-prop{display:grid;grid-template-columns:118px 1fr;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+      .kb-prop:last-child{border-bottom:none;}
+      .kb-prop>label{font-size:12.5px;color:var(--text2);display:flex;align-items:center;gap:7px;}
+      .kb-prop select,.kb-prop input[type=date]{width:100%;box-sizing:border-box;border:1px solid var(--border2);background:var(--bg);border-radius:8px;padding:7px 9px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none;}
+      .kb-prop select:focus,.kb-prop input:focus{border-color:var(--accent);}
+      .kb-prop-val{font-size:12.5px;color:var(--text);font-weight:600;}
+      .kb-assign-row{display:flex;gap:4px;flex-wrap:wrap;}
+      .kb-assign{border:none;background:none;padding:0;cursor:pointer;border-radius:50%;opacity:.4;filter:grayscale(.4);transition:opacity .12s;}
+      .kb-assign .kb-av{margin-left:0;}
+      .kb-assign.on{opacity:1;filter:none;box-shadow:0 0 0 2px var(--accent);border-radius:50%;}
+      .kb-label-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+      .kb-label-in{border:1px dashed var(--border2);background:var(--bg);border-radius:7px;padding:4px 8px;font-size:11.5px;font-family:inherit;color:var(--text);outline:none;min-width:120px;}
+      .kb-del{color:var(--red)!important;}
+      .kb-act{display:flex;gap:11px;align-items:flex-start;font-size:12.5px;color:var(--text);} .kb-act .kb-av{margin-left:0;}
+      .kb-act-t{font-size:11px;color:var(--text3);margin-top:2px;}
+      @media(max-width:760px){ .kb-drawer{width:100vw;} }
+      /* ----- Embedded employee task board (iframe of the shared director board) ----- */
+      .essb-frame{width:100%;height:calc(100vh - 132px);min-height:560px;border:0;border-radius:14px;
+        background:#f4f6fb;box-shadow:var(--shadow);display:block;}
+      /* ----- Director-comment notification badge (glows to draw attention) ----- */
+      .ess-attn-badge{background:#f59e0b!important;color:#fff!important;animation:essbpulse 1.5s ease-in-out infinite;}
+      @keyframes essbpulse{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.55);}50%{box-shadow:0 0 0 4px rgba(245,158,11,0);}}
+    `;
+    const st=document.createElement('style'); st.id='ess-board-styles'; st.textContent=css; document.head.appendChild(st);
   }
 
   function init(){
-    injectStyles(); buildNav(); buildPanels(); registerPanels();
+    injectStyles(); injectBoardStyles(); buildNav(); buildPanels(); registerPanels();
+    // Live notification: when the Director (other tab) comments on this employee's
+    // board, the shared key changes → refresh the badge. When the employee opens a
+    // task (clearing the glow), the iframe's write fires this too → badge updates.
+    window.addEventListener('storage', e=>{ if(e.key==='epal_emp_tasks_'+SELF_EMP_ID){ updateTaskBadge(); } });
     if(window.EpalRBAC && EpalRBAC.current().role==='employee') activate();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
