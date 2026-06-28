@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Epal Travels — Employee Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f6fb; --bg2:#ffffff; --bg3:#f0f2f8; --border:#e4e8f0; --border2:#d0d6e8;
+  --text:#1a2035; --text2:#5a6480; --text3:#9aa3bc;
+  --accent:#2563eb; --accent2:#1d4ed8; --accent-light:#eff6ff;
+  --green:#16a34a; --amber:#d97706; --red:#dc2626; --purple:#7c3aed; --teal:#0d9488;
+  --travels:#2563eb;
+  --sidebar-w:236px;
+  --shadow:0 1px 4px rgba(30,50,100,.07); --shadow2:0 4px 16px rgba(30,50,100,.10); --shadow3:0 14px 40px rgba(30,50,100,.18);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+#app{display:flex;height:100vh;overflow:hidden;}
+
+/* ---------- Sidebar ---------- */
+.side{width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto;flex-shrink:0;}
+.side-logo{padding:15px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;position:sticky;top:0;background:var(--bg2);z-index:5;}
+.side-logo .ic{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:17px;flex-shrink:0;font-style:italic;}
+.side-logo .tx{font-size:14px;font-weight:700;line-height:1.15;}
+.side-logo .sub{font-size:10px;color:var(--text3);margin-top:1px;}
+.side-nav{padding:6px 0 30px;}
+.nav-sec{font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--text3);text-transform:uppercase;padding:14px 20px 5px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;font-size:13px;color:var(--text2);cursor:pointer;border-left:3px solid transparent;transition:background .12s,color .12s;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:var(--accent-light);color:var(--accent);border-left-color:var(--accent);font-weight:600;}
+.nav-item .ic{width:18px;text-align:center;font-size:14px;flex-shrink:0;}
+.nav-item .arr{margin-left:auto;font-size:12px;transition:transform .15s;color:var(--text3);}
+.nav-group.open .arr{transform:rotate(90deg);}
+.nav-sub{display:none;}
+.nav-group.open + .nav-sub{display:block;}
+.nav-sub .nav-item{padding-left:42px;font-size:12.5px;}
+
+/* ---------- Main ---------- */
+.main{flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.topbar{height:60px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:14px;flex-shrink:0;}
+.topbar .crumb{font-size:15px;font-weight:700;}
+.topbar .crumb small{display:block;font-size:11px;font-weight:500;color:var(--text3);margin-top:1px;}
+.topbar .co-badge{margin-left:6px;font-size:11px;font-weight:700;color:var(--travels);background:#eff6ff;padding:4px 10px;border-radius:20px;}
+.topbar .spacer{flex:1;}
+.topbar .me{display:flex;align-items:center;gap:9px;}
+.topbar .me .av{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;}
+.topbar .me .nm{font-size:12.5px;font-weight:700;line-height:1.2;}
+.topbar .me .rl{font-size:11px;color:var(--text3);}
+.content{flex:1;overflow-y:auto;padding:22px 26px 60px;}
+
+/* ---------- Page header / toolbar ---------- */
+.ph{display:flex;align-items:flex-end;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
+.ph h2{font-size:20px;font-weight:700;}
+.ph .sub{font-size:12.5px;color:var(--text2);margin-top:3px;}
+.ph .ph-r{margin-left:auto;display:flex;gap:9px;align-items:center;}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.toolbar .search{flex:1;min-width:180px;max-width:340px;position:relative;}
+.toolbar .search input{width:100%;border:1px solid var(--border2);background:var(--bg2);border-radius:9px;padding:9px 12px 9px 32px;font-size:13px;font-family:inherit;color:var(--text);outline:none;}
+.toolbar .search input:focus{border-color:var(--accent);}
+.toolbar .search:before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;opacity:.6;}
+.toolbar select{border:1px solid var(--border2);background:var(--bg2);border-radius:9px;padding:9px 11px;font-size:13px;font-family:inherit;color:var(--text);outline:none;}
+.toolbar .ct{font-size:12px;color:var(--text3);margin-left:auto;}
+
+/* ---------- Buttons ---------- */
+.btn{border:1px solid var(--border2);background:var(--bg2);border-radius:9px;padding:9px 15px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text);display:inline-flex;align-items:center;gap:6px;transition:all .12s;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.primary:hover{background:var(--accent2);color:#fff;}
+.btn.ghost{background:var(--bg3);}
+.tbtn{border:0;background:none;cursor:pointer;font-size:14px;padding:4px 6px;border-radius:6px;line-height:1;}
+.tbtn:hover{background:var(--bg3);}
+.tbtn.danger:hover{background:#fef2f2;}
+
+/* ---------- Table ---------- */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;}
+table.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{text-align:left;color:var(--text2);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;padding:11px 14px;border-bottom:1px solid var(--border);background:var(--bg3);white-space:nowrap;}
+.tbl td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:#fafbff;}
+.tbl td.empty{text-align:center;color:var(--text3);padding:34px;font-style:italic;}
+.tbl .mono{font-family:'DM Mono',ui-monospace,monospace;font-size:12px;color:var(--text2);}
+.tbl .strong{font-weight:600;}
+
+/* ---------- Pills ---------- */
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;}
+.pill.ok{background:rgba(22,163,74,.13);color:#16a34a;}
+.pill.warn{background:rgba(217,119,6,.15);color:#d97706;}
+.pill.bad{background:rgba(220,38,38,.13);color:#dc2626;}
+.pill.info{background:rgba(37,99,235,.13);color:#2563eb;}
+.pill.purple{background:rgba(124,58,237,.13);color:#7c3aed;}
+.pill.muted{background:var(--bg3);color:var(--text2);}
+
+/* ---------- KPI cards / dashboard ---------- */
+.hero{background:linear-gradient(120deg,#1d4ed8,#2563eb 55%,#7c3aed);color:#fff;border-radius:16px;padding:22px 24px;margin-bottom:20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;box-shadow:0 10px 26px rgba(37,99,235,.28);}
+.hero .av{width:60px;height:60px;border-radius:15px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex-shrink:0;}
+.hero h2{font-size:21px;font-weight:700;}
+.hero .sub{opacity:.92;font-size:13px;margin-top:4px;}
+.hero .today{margin-left:auto;text-align:right;font-size:12.5px;opacity:.95;}
+.hero .today b{display:block;font-size:15px;margin-top:2px;}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:15px;margin-bottom:20px;}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);}
+.kpi .lbl{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:7px;}
+.kpi .val{font-size:26px;font-weight:700;margin-top:7px;font-family:'DM Mono',ui-monospace,monospace;}
+.kpi .meta{font-size:11.5px;color:var(--text3);margin-top:3px;}
+.two{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;align-items:start;}
+@media(max-width:980px){.two{grid-template-columns:1fr;}}
+.box{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:18px;}
+.box h3{font-size:14.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.box h3 .sp{margin-left:auto;font-size:12px;font-weight:500;color:var(--accent);cursor:pointer;}
+
+/* ---------- Kanban (visa board / tasks) ---------- */
+.kanban{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;}
+.kcol{background:var(--bg3);border-radius:13px;padding:12px;min-width:236px;flex:1;min-height:140px;}
+.kcol.over{outline:2px dashed var(--accent);outline-offset:-4px;}
+.kcol-h{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text2);margin:3px 5px 11px;}
+.kdot{width:9px;height:9px;border-radius:50%;}
+.kct{margin-left:auto;background:rgba(0,0,0,.07);border-radius:10px;padding:1px 9px;font-size:11px;}
+.kcard{background:var(--bg2);border:1px solid var(--border);border-radius:11px;padding:12px;margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow);transition:transform .1s,box-shadow .1s;}
+.kcard:hover{transform:translateY(-2px);box-shadow:var(--shadow2);}
+.kcard.dragging{opacity:.45;}
+.kcard .t{font-size:13px;font-weight:700;margin-bottom:4px;}
+.kcard .d{font-size:11.5px;color:var(--text2);line-height:1.4;}
+.kcard .foot{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap;}
+.kcard .money{font-weight:700;font-size:12.5px;color:var(--green);}
+.kempty{font-size:12px;color:var(--text3);text-align:center;padding:14px 0;}
+
+/* ---------- Modal ---------- */
+.modal{position:fixed;inset:0;background:rgba(20,24,40,.5);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:80;padding:20px;}
+.modal.open{display:flex;}
+.modal-box{background:var(--bg2);border-radius:16px;width:600px;max-width:100%;max-height:90vh;overflow:auto;box-shadow:var(--shadow3);}
+.modal-h{padding:17px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;position:sticky;top:0;background:var(--bg2);z-index:2;}
+.modal-h .ti{font-size:16px;font-weight:700;}
+.modal-h .x{margin-left:auto;border:0;background:var(--bg3);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:15px;color:var(--text2);}
+.modal-b{padding:18px 22px;}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.field.full{grid-column:1/-1;}
+@media(max-width:620px){.form{grid-template-columns:1fr;}}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:600;}
+.field input,.field select,.field textarea{width:100%;box-sizing:border-box;border:1px solid var(--border2);background:var(--bg);border-radius:9px;padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text);outline:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);background:var(--bg2);}
+.modal-f{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:var(--bg2);}
+
+/* ---------- ESS personal ---------- */
+.bal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:13px;margin-bottom:18px;}
+.bal .b{border:1px solid var(--border);border-radius:12px;padding:15px;text-align:center;background:var(--bg2);box-shadow:var(--shadow);}
+.bal .b .n{font-size:24px;font-weight:700;color:var(--accent);}
+.bal .b .t{font-size:12px;color:var(--text2);margin-top:4px;}
+.pay{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+@media(max-width:760px){.pay{grid-template-columns:1fr;}}
+.pay .ph2{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text2);margin-bottom:8px;}
+.pay .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--border);font-size:13px;}
+.pay .row.tot{border-bottom:none;font-weight:700;font-size:15px;margin-top:8px;border-top:2px solid var(--border);padding-top:12px;}
+.notice{display:flex;gap:13px;padding:13px 0;border-bottom:1px solid var(--border);}
+.notice:last-child{border-bottom:none;}
+.notice .ic{font-size:19px;}
+.notice .ti{font-weight:600;font-size:13.5px;}
+.notice .bd{font-size:12.5px;color:var(--text2);margin-top:3px;line-height:1.5;}
+.notice .dt{font-size:11px;color:var(--text3);margin-top:4px;}
+.addbar{display:flex;gap:9px;margin-bottom:14px;}
+.addbar input{flex:1;border:1px solid var(--border2);background:var(--bg2);border-radius:9px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;}
+.addbar input:focus{border-color:var(--accent);}
+.mv{border:1px solid var(--border2);background:var(--bg2);border-radius:6px;width:24px;height:24px;cursor:pointer;font-size:12px;line-height:1;}
+.mv:hover{border-color:var(--accent);color:var(--accent);}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside class="side">
+    <div class="side-logo">
+      <div class="ic">e</div>
+      <div><div class="tx">Epal Travels</div><div class="sub">Employee Portal</div></div>
+    </div>
+    <nav class="side-nav" id="side-nav"></nav>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div class="crumb" id="crumb">Dashboard<small id="crumb-sub">Welcome back</small></div>
+      <span class="co-badge">🏢 Epal Travels</span>
+      <div class="spacer"></div>
+      <div class="me">
+        <div class="av" id="me-av">IH</div>
+        <div><div class="nm" id="me-nm">Imran Hossain</div><div class="rl" id="me-rl">Travel Consultant</div></div>
+      </div>
+    </header>
+    <div class="content" id="content"></div>
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="modal" onclick="if(event.target===this)TR.closeModal()">
+  <div class="modal-box">
+    <div class="modal-h"><span class="ti" id="modal-ti">Form</span><button class="x" onclick="TR.closeModal()">✕</button></div>
+    <div class="modal-b"><div class="form" id="modal-form"></div></div>
+    <div class="modal-f"><button class="btn" onclick="TR.closeModal()">Cancel</button><button class="btn primary" id="modal-save">Save</button></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ════════════════════════════════════════════════════════════════════
+   EPAL TRAVELS — Employee Portal (standalone UI prototype)
+   Field names / statuses mirror the real Laravel app (epal_erp_soft).
+   All data is mock + localStorage-backed; every module is interactive.
+   ════════════════════════════════════════════════════════════════════ */
+const EMP={name:'Imran Hossain', id:'EMP-2042', desig:'Travel Consultant', dept:'Epal Travels',
+  initials:'IH', manager:'Fahim Rahman', email:'imran.hossain@epalgroup.com'};
+const TODAY='Sunday, 28 June 2026';
+
+/* ---------- tiny helpers ---------- */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money=n=>'৳'+Number(n||0).toLocaleString('en-IN');
+const pretty=s=>String(s==null?'':s).replace(/[_-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+const uid=p=>p+'-'+String(Date.now()).slice(-5)+Math.floor(Math.random()*90+10);
+const sum=(arr,f)=>arr.reduce((a,x)=>a+(Number(f(x))||0),0);
+
+/* ---------- option pools ---------- */
+const AIRLINES=['Biman Bangladesh','US-Bangla','Air Astra','Emirates','Qatar Airways','Saudia','Malaysia Airlines','IndiGo','Turkish Airlines'];
+const AIRPORTS=['DAC — Dhaka','CXB — Cox’s Bazar','CGP — Chattogram','DXB — Dubai','JED — Jeddah','RUH — Riyadh','KUL — Kuala Lumpur','DOH — Doha','SIN — Singapore','IST — Istanbul'];
+const COUNTRIES=['Bangladesh','UAE','Saudi Arabia','Malaysia','Qatar','Singapore','Turkey','Thailand','India','UK','Canada','Schengen'];
+const OFFICERS=['Imran Hossain','Fatema Akter','Mitu Rani','Tareq Aziz'];
+const VENDORS_LIST=['Galaxy Travels','SkyLink GSA','Dubai Holidays Ltd','Al-Haramain Agency','Portal: Sabre','Portal: Galileo'];
+
+/* ════════════════ RESOURCE SCHEMAS ════════════════ */
+const RES={
+  /* ---- Air Ticketing: inventory ---- */
+  'tickets':{
+    label:'Ticket Inventory', icon:'🎫', idPrefix:'TKT',
+    title:'Ticket Inventory', sub:'Air ticket routes, pricing & stock',
+    search:['route','airline','vendor'], statusKey:'status', statusOpts:['Active','Inactive'],
+    badgeMaps:{status:{Active:'ok',Inactive:'muted'}},
+    columns:[
+      {k:'route',t:'Route',strong:true},{k:'airline',t:'Airline'},{k:'vendor',t:'Vendor / Portal'},
+      {k:'price',t:'Cost Price',money:true},{k:'qty',t:'Stock'},{k:'sold',t:'Sold'},
+      {k:'remaining',t:'Remaining',compute:r=>(+r.qty||0)-(+r.sold||0)},
+      {k:'status',t:'Status',badge:'status'}
+    ],
+    fields:[
+      {k:'route',t:'Ticket Route',type:'text',req:true,full:true},
+      {k:'airline',t:'Airline',type:'select',opts:AIRLINES,req:true},
+      {k:'vendor',t:'Vendor / Portal',type:'select',opts:VENDORS_LIST},
+      {k:'price',t:'Cost Price (৳)',type:'number',req:true},
+      {k:'sale',t:'Sale Price (৳)',type:'number'},
+      {k:'qty',t:'Total Stock Qty',type:'number',req:true},
+      {k:'sold',t:'Sold Qty',type:'number'},
+      {k:'status',t:'Status',type:'select',opts:['Active','Inactive']}
+    ],
+    seed:[
+      {id:'TKT-1001',route:'Dhaka → Dubai (DAC-DXB)',airline:'Emirates',vendor:'Dubai Holidays Ltd',price:48000,sale:54000,qty:40,sold:23,status:'Active'},
+      {id:'TKT-1002',route:'Dhaka → Jeddah (DAC-JED)',airline:'Saudia',vendor:'Al-Haramain Agency',price:62000,sale:69000,qty:60,sold:51,status:'Active'},
+      {id:'TKT-1003',route:'Dhaka → Kuala Lumpur (DAC-KUL)',airline:'Malaysia Airlines',vendor:'Portal: Sabre',price:39000,sale:45000,qty:30,sold:12,status:'Active'},
+      {id:'TKT-1004',route:'Dhaka → Doha (DAC-DOH)',airline:'Qatar Airways',vendor:'Galaxy Travels',price:51000,sale:58000,qty:25,sold:25,status:'Inactive'},
+      {id:'TKT-1005',route:'Dhaka → Riyadh (DAC-RUH)',airline:'US-Bangla',vendor:'SkyLink GSA',price:57000,sale:63000,qty:35,sold:8,status:'Active'}
+    ]
+  },
+  /* ---- Air Ticketing: sales ---- */
+  'ticket-sales':{
+    label:'Ticket Sales', icon:'🧾', idPrefix:'TS',
+    title:'Ticket Sales', sub:'Direct ticket sales & invoices',
+    search:['customer','route','airline'], statusKey:'paymentStatus', statusOpts:['paid','partial','due'],
+    badgeMaps:{paymentStatus:{paid:'ok',partial:'warn',due:'bad'},status:{confirmed:'ok',pending:'warn',cancelled:'bad'}},
+    columns:[
+      {k:'id',t:'Invoice',mono:true},{k:'date',t:'Date'},{k:'customer',t:'Customer',strong:true},
+      {k:'route',t:'Route'},{k:'pax',t:'Pax'},{k:'sale',t:'Sale',money:true},
+      {k:'profit',t:'Profit',money:true,compute:r=>(+r.sale||0)-(+r.cost||0)},
+      {k:'status',t:'Status',badge:'status'},{k:'paymentStatus',t:'Payment',badge:'paymentStatus'}
+    ],
+    fields:[
+      {k:'date',t:'Sale Date',type:'date',req:true},
+      {k:'customer',t:'Customer',type:'select',opts:()=>DB['customers'].map(c=>c.name),req:true},
+      {k:'route',t:'Route',type:'select',opts:()=>DB['tickets'].map(t=>t.route),req:true},
+      {k:'airline',t:'Airline',type:'select',opts:AIRLINES},
+      {k:'pax',t:'Passengers',type:'number'},
+      {k:'cost',t:'Cost (৳)',type:'number'},
+      {k:'sale',t:'Sale Price (৳)',type:'number',req:true},
+      {k:'status',t:'Booking Status',type:'select',opts:['confirmed','pending','cancelled']},
+      {k:'paymentStatus',t:'Payment Status',type:'select',opts:['paid','partial','due']}
+    ],
+    rowActions:[{key:'pay',icon:'💳',label:'Mark Paid',run:r=>{r.paymentStatus='paid';r.status='confirmed';}}],
+    seed:[
+      {id:'TS-5001',date:'2026-06-26',customer:'Rahim Enterprise',route:'Dhaka → Dubai (DAC-DXB)',airline:'Emirates',pax:2,cost:96000,sale:112000,status:'confirmed',paymentStatus:'paid'},
+      {id:'TS-5002',date:'2026-06-27',customer:'Nadia Sultana',route:'Dhaka → Jeddah (DAC-JED)',airline:'Saudia',pax:1,cost:62000,sale:69000,status:'confirmed',paymentStatus:'partial'},
+      {id:'TS-5003',date:'2026-06-27',customer:'GreenLand Tours',route:'Dhaka → Kuala Lumpur (DAC-KUL)',airline:'Malaysia Airlines',pax:4,cost:156000,sale:184000,status:'pending',paymentStatus:'due'},
+      {id:'TS-5004',date:'2026-06-28',customer:'Kamal Hossain',route:'Dhaka → Riyadh (DAC-RUH)',airline:'US-Bangla',pax:1,cost:57000,sale:63000,status:'confirmed',paymentStatus:'paid'}
+    ]
+  },
+  /* ---- Airlines ---- */
+  'airlines':{
+    label:'Airlines', icon:'🛩', idPrefix:'AIR',
+    title:'Airlines', sub:'Airline master list',
+    search:['name','code'], statusKey:'status', statusOpts:['Active','Inactive'],
+    badgeMaps:{status:{Active:'ok',Inactive:'muted'}},
+    columns:[{k:'name',t:'Airline',strong:true},{k:'code',t:'Code',mono:true},{k:'status',t:'Status',badge:'status'}],
+    fields:[
+      {k:'name',t:'Airline Name',type:'select',opts:AIRLINES,req:true},
+      {k:'code',t:'IATA Code',type:'text'},
+      {k:'status',t:'Status',type:'select',opts:['Active','Inactive']}
+    ],
+    seed:[
+      {id:'AIR-1',name:'Biman Bangladesh',code:'BG',status:'Active'},
+      {id:'AIR-2',name:'US-Bangla',code:'BS',status:'Active'},
+      {id:'AIR-3',name:'Emirates',code:'EK',status:'Active'},
+      {id:'AIR-4',name:'Qatar Airways',code:'QR',status:'Active'},
+      {id:'AIR-5',name:'Saudia',code:'SV',status:'Active'},
+      {id:'AIR-6',name:'Malaysia Airlines',code:'MH',status:'Inactive'}
+    ]
+  },
+  /* ---- Airports ---- */
+  'airports':{
+    label:'Airports', icon:'📍', idPrefix:'APT',
+    title:'Airports', sub:'Airport directory',
+    search:['name','code','country'],
+    columns:[{k:'name',t:'Airport',strong:true},{k:'code',t:'Code',mono:true},{k:'country',t:'Country'},{k:'state',t:'City / State'}],
+    fields:[
+      {k:'name',t:'Airport Name',type:'text',req:true},
+      {k:'code',t:'Airport Code',type:'text',req:true},
+      {k:'country',t:'Country',type:'select',opts:COUNTRIES,req:true},
+      {k:'state',t:'City / State',type:'text'}
+    ],
+    seed:[
+      {id:'APT-1',name:'Hazrat Shahjalal Intl',code:'DAC',country:'Bangladesh',state:'Dhaka'},
+      {id:'APT-2',name:'Shah Amanat Intl',code:'CGP',country:'Bangladesh',state:'Chattogram'},
+      {id:'APT-3',name:'Dubai International',code:'DXB',country:'UAE',state:'Dubai'},
+      {id:'APT-4',name:'King Abdulaziz Intl',code:'JED',country:'Saudi Arabia',state:'Jeddah'},
+      {id:'APT-5',name:'Kuala Lumpur Intl',code:'KUL',country:'Malaysia',state:'Selangor'}
+    ]
+  },
+  /* ---- Visa Processing (Kanban board) ---- */
+  'visa':{
+    label:'Visa Applications', icon:'📋', idPrefix:'VP', view:'board',
+    title:'Visa Application Board', sub:'Track applications through the embassy workflow',
+    search:['applicant','country','officer'], statusKey:'status',
+    boardStatuses:[
+      {k:'pending',t:'New',c:'#94a3b8'},{k:'received',t:'Doc Collection',c:'#2563eb'},
+      {k:'in_embassy',t:'In Embassy',c:'#7c3aed'},{k:'delivered',t:'In Progress',c:'#d97706'},
+      {k:'approved',t:'Approved',c:'#16a34a'},{k:'rejected',t:'Rejected',c:'#dc2626'}
+    ],
+    badgeMaps:{paymentStatus:{paid:'ok',partial:'warn',pending:'bad'}},
+    fields:[
+      {k:'applicant',t:'Passport Holder',type:'select',opts:()=>DB['passport-holders'].map(p=>p.name),req:true},
+      {k:'country',t:'Country',type:'select',opts:COUNTRIES,req:true},
+      {k:'visaType',t:'Visa Type',type:'select',opts:['Tourist','Work','Student','Business','Family','Umrah / Hajj']},
+      {k:'stage',t:'Stage',type:'select',opts:['File Open','Documents','Biometric','Submitted','Decision']},
+      {k:'status',t:'Status',type:'select',opts:['pending','received','in_embassy','delivered','approved','rejected']},
+      {k:'costPrice',t:'Costing Price (৳)',type:'number'},
+      {k:'salePrice',t:'Sale Price (৳)',type:'number',req:true},
+      {k:'advance',t:'Advance Received (৳)',type:'number'},
+      {k:'paymentStatus',t:'Payment Status',type:'select',opts:['pending','partial','paid']},
+      {k:'officer',t:'Assigned Officer',type:'select',opts:OFFICERS},
+      {k:'travelDate',t:'Travel Date',type:'date'},
+      {k:'remarks',t:'Remarks',type:'textarea',full:true}
+    ],
+    seed:[
+      {id:'VP-3001',applicant:'Abdul Karim',country:'Saudi Arabia',visaType:'Umrah / Hajj',stage:'Documents',status:'received',costPrice:18000,salePrice:25000,advance:10000,paymentStatus:'partial',officer:'Imran Hossain',travelDate:'2026-07-20',remarks:'Umrah group of 4.'},
+      {id:'VP-3002',applicant:'Sharmin Akter',country:'Malaysia',visaType:'Tourist',stage:'Submitted',status:'in_embassy',costPrice:9000,salePrice:14000,advance:14000,paymentStatus:'paid',officer:'Fatema Akter',travelDate:'2026-07-05',remarks:''},
+      {id:'VP-3003',applicant:'Tanvir Ahmed',country:'UAE',visaType:'Work',stage:'Decision',status:'approved',costPrice:32000,salePrice:42000,advance:42000,paymentStatus:'paid',officer:'Imran Hossain',travelDate:'2026-07-12',remarks:'Employment visa approved.'},
+      {id:'VP-3004',applicant:'Rumana Begum',country:'Schengen',visaType:'Tourist',stage:'File Open',status:'pending',costPrice:15000,salePrice:23000,advance:0,paymentStatus:'pending',officer:'Mitu Rani',travelDate:'2026-08-15',remarks:'Awaiting bank statement.'},
+      {id:'VP-3005',applicant:'Jamal Uddin',country:'Qatar',visaType:'Work',stage:'Biometric',status:'delivered',costPrice:28000,salePrice:36000,advance:20000,paymentStatus:'partial',officer:'Tareq Aziz',travelDate:'2026-07-28',remarks:''},
+      {id:'VP-3006',applicant:'Nasrin Sultana',country:'India',visaType:'Tourist',stage:'Decision',status:'rejected',costPrice:6000,salePrice:9000,advance:9000,paymentStatus:'paid',officer:'Fatema Akter',travelDate:'',remarks:'Rejected — insufficient docs.'}
+    ]
+  },
+  /* ---- Visa categories ---- */
+  'visa-categories':{
+    label:'Visa Categories', icon:'🗂', idPrefix:'VC',
+    title:'Visa Categories', sub:'Visa types per country with costing',
+    search:['name','country','visaType'],
+    columns:[
+      {k:'name',t:'Category',strong:true},{k:'country',t:'Country'},{k:'visaType',t:'Type'},
+      {k:'avgDays',t:'Avg Days'},{k:'costPrice',t:'Cost',money:true},{k:'salePrice',t:'Sale',money:true}
+    ],
+    fields:[
+      {k:'name',t:'Category Name',type:'text',req:true},
+      {k:'country',t:'Country',type:'select',opts:COUNTRIES,req:true},
+      {k:'visaType',t:'Visa Type',type:'select',opts:['Tourist','Work','Student','Business','Family','Umrah / Hajj']},
+      {k:'avgDays',t:'Avg Processing Days',type:'number'},
+      {k:'costPrice',t:'Costing Price (৳)',type:'number'},
+      {k:'salePrice',t:'Sale Price (৳)',type:'number'}
+    ],
+    seed:[
+      {id:'VC-1',name:'KSA Umrah Visa',country:'Saudi Arabia',visaType:'Umrah / Hajj',avgDays:7,costPrice:18000,salePrice:25000},
+      {id:'VC-2',name:'Malaysia Tourist',country:'Malaysia',visaType:'Tourist',avgDays:5,costPrice:9000,salePrice:14000},
+      {id:'VC-3',name:'UAE Employment',country:'UAE',visaType:'Work',avgDays:14,costPrice:32000,salePrice:42000},
+      {id:'VC-4',name:'Schengen Tourist',country:'Schengen',visaType:'Tourist',avgDays:21,costPrice:15000,salePrice:23000}
+    ]
+  },
+  /* ---- Passport holders ---- */
+  'passport-holders':{
+    label:'Passport Holders', icon:'📓', idPrefix:'PH',
+    title:'Passport Holders', sub:'Applicant passport records',
+    search:['name','passportNo','nationality'], statusKey:'status', statusOpts:['Active','Inactive'],
+    badgeMaps:{status:{Active:'ok',Inactive:'muted'}},
+    columns:[
+      {k:'name',t:'Name',strong:true},{k:'passportNo',t:'Passport No',mono:true},
+      {k:'nationality',t:'Nationality'},{k:'category',t:'Category'},
+      {k:'expiryDate',t:'Expiry'},{k:'status',t:'Status',badge:'status'}
+    ],
+    fields:[
+      {k:'name',t:'Full Name',type:'text',req:true},
+      {k:'passportNo',t:'Passport No',type:'text',req:true},
+      {k:'nationality',t:'Nationality',type:'select',opts:COUNTRIES,req:true},
+      {k:'phone',t:'Phone',type:'text'},
+      {k:'dob',t:'Date of Birth',type:'date'},
+      {k:'category',t:'Category',type:'select',opts:['Student','Professional','Business','Worker','Retired','General']},
+      {k:'issueDate',t:'Issue Date',type:'date'},
+      {k:'expiryDate',t:'Expiry Date',type:'date'},
+      {k:'status',t:'Status',type:'select',opts:['Active','Inactive']}
+    ],
+    seed:[
+      {id:'PH-1',name:'Abdul Karim',passportNo:'BX0451234',nationality:'Bangladesh',phone:'+8801711000001',dob:'1985-03-12',category:'Worker',issueDate:'2022-01-10',expiryDate:'2027-01-09',status:'Active'},
+      {id:'PH-2',name:'Sharmin Akter',passportNo:'BX0987654',nationality:'Bangladesh',phone:'+8801711000002',dob:'1992-08-22',category:'General',issueDate:'2021-06-01',expiryDate:'2026-05-31',status:'Active'},
+      {id:'PH-3',name:'Tanvir Ahmed',passportNo:'BW1122334',nationality:'Bangladesh',phone:'+8801711000003',dob:'1990-11-05',category:'Professional',issueDate:'2023-02-15',expiryDate:'2028-02-14',status:'Active'},
+      {id:'PH-4',name:'Rumana Begum',passportNo:'BX0555666',nationality:'Bangladesh',phone:'+8801711000004',dob:'1988-04-19',category:'Business',issueDate:'2020-09-09',expiryDate:'2025-09-08',status:'Inactive'},
+      {id:'PH-5',name:'Jamal Uddin',passportNo:'BW7788990',nationality:'Bangladesh',phone:'+8801711000005',dob:'1995-01-30',category:'Worker',issueDate:'2024-03-01',expiryDate:'2029-02-28',status:'Active'},
+      {id:'PH-6',name:'Nasrin Sultana',passportNo:'BX0334455',nationality:'Bangladesh',phone:'+8801711000006',dob:'1993-07-14',category:'General',issueDate:'2022-12-20',expiryDate:'2027-12-19',status:'Active'}
+    ]
+  },
+  /* ---- Customers ---- */
+  'customers':{
+    label:'Customers', icon:'👥', idPrefix:'CUS',
+    title:'Customers', sub:'Customer profiles & contacts',
+    search:['name','company','email','phone'], statusKey:'status', statusOpts:['Active','Inactive'],
+    badgeMaps:{status:{Active:'ok',Inactive:'muted'}},
+    columns:[
+      {k:'name',t:'Name',strong:true},{k:'company',t:'Company'},{k:'email',t:'Email'},
+      {k:'phone',t:'Phone',mono:true},{k:'status',t:'Status',badge:'status'}
+    ],
+    fields:[
+      {k:'name',t:'Customer Name',type:'text',req:true},
+      {k:'company',t:'Company',type:'text'},
+      {k:'email',t:'Email',type:'text'},
+      {k:'phone',t:'Phone',type:'text'},
+      {k:'address',t:'Address',type:'textarea',full:true},
+      {k:'status',t:'Status',type:'select',opts:['Active','Inactive']}
+    ],
+    seed:[
+      {id:'CUS-1',name:'Rahim Enterprise',company:'Rahim Enterprise',email:'info@rahim.com',phone:'+8801811111111',address:'Motijheel, Dhaka',status:'Active'},
+      {id:'CUS-2',name:'Nadia Sultana',company:'—',email:'nadia@gmail.com',phone:'+8801822222222',address:'Uttara, Dhaka',status:'Active'},
+      {id:'CUS-3',name:'GreenLand Tours',company:'GreenLand Tours Ltd',email:'book@greenland.com',phone:'+8801833333333',address:'Gulshan, Dhaka',status:'Active'},
+      {id:'CUS-4',name:'Kamal Hossain',company:'—',email:'kamal@yahoo.com',phone:'+8801844444444',address:'Mirpur, Dhaka',status:'Active'},
+      {id:'CUS-5',name:'Blue Sky Corp',company:'Blue Sky Corp',email:'travel@bluesky.com',phone:'+8801855555555',address:'Banani, Dhaka',status:'Inactive'}
+    ]
+  },
+  /* ---- Leads ---- */
+  'leads':{
+    label:'Leads', icon:'🎯', idPrefix:'LD',
+    title:'Lead Manager', sub:'Sales leads pipeline',
+    search:['name','phone','email','source'], statusKey:'status',
+    statusOpts:['new','contacted','qualified','proposal_sent','negotiation','won','lost'],
+    badgeMaps:{
+      status:{new:'info',contacted:'purple',qualified:'warn',proposal_sent:'warn',negotiation:'warn',won:'ok',lost:'bad'},
+      type:{air_ticket:'info',visa:'purple',software:'ok',interior:'warn',other:'muted'}
+    },
+    columns:[
+      {k:'type',t:'Type',badge:'type'},{k:'name',t:'Name',strong:true},{k:'phone',t:'Phone',mono:true},
+      {k:'source',t:'Source'},{k:'assignedTo',t:'Assigned'},{k:'date',t:'Date'},{k:'status',t:'Status',badge:'status'}
+    ],
+    fields:[
+      {k:'name',t:'Lead Name',type:'text',req:true},
+      {k:'phone',t:'Phone',type:'text'},
+      {k:'email',t:'Email',type:'text'},
+      {k:'source',t:'Lead Source',type:'select',opts:['Website','Facebook Ads','Referral','Walk-in','Phone Call','WhatsApp']},
+      {k:'type',t:'Lead Type',type:'select',opts:['air_ticket','visa','software','interior','other'],req:true},
+      {k:'status',t:'Status',type:'select',opts:['new','contacted','qualified','proposal_sent','negotiation','won','lost']},
+      {k:'assignedTo',t:'Assigned To',type:'select',opts:OFFICERS},
+      {k:'date',t:'Date',type:'date'},
+      {k:'notes',t:'Notes',type:'textarea',full:true}
+    ],
+    rowActions:[{key:'won',icon:'🏆',label:'Mark Won',run:r=>{r.status='won';}}],
+    seed:[
+      {id:'LD-7001',name:'Hasan Mahmud',phone:'+8801911000001',email:'hasan@gmail.com',source:'Facebook Ads',type:'air_ticket',status:'new',assignedTo:'Imran Hossain',date:'2026-06-27',notes:'Wants Dubai return for 3.'},
+      {id:'LD-7002',name:'Farhana Yasmin',phone:'+8801911000002',email:'farhana@gmail.com',source:'Referral',type:'visa',status:'qualified',assignedTo:'Fatema Akter',date:'2026-06-25',notes:'Malaysia tourist visa.'},
+      {id:'LD-7003',name:'Delwar Hossain',phone:'+8801911000003',email:'delwar@gmail.com',source:'Website',type:'air_ticket',status:'proposal_sent',assignedTo:'Imran Hossain',date:'2026-06-24',notes:'Umrah package quote sent.'},
+      {id:'LD-7004',name:'Shila Rani',phone:'+8801911000004',email:'shila@gmail.com',source:'WhatsApp',type:'visa',status:'won',assignedTo:'Mitu Rani',date:'2026-06-20',notes:'Converted — UAE work visa.'},
+      {id:'LD-7005',name:'Arif Khan',phone:'+8801911000005',email:'arif@gmail.com',source:'Walk-in',type:'other',status:'lost',assignedTo:'Tareq Aziz',date:'2026-06-18',notes:'Chose another agency.'}
+    ]
+  },
+  /* ---- Vendors & Agents ---- */
+  'vendors':{
+    label:'Vendors & Agents', icon:'🏢', idPrefix:'VN',
+    title:'Vendors & Agents', sub:'Suppliers, GSAs & sales agents',
+    search:['name','contactPerson','phone'], statusKey:'status',
+    statusOpts:['active','on_hold','blocked','inactive'],
+    badgeMaps:{status:{active:'ok',on_hold:'warn',blocked:'bad',inactive:'muted'}},
+    columns:[
+      {k:'id',t:'Vendor ID',mono:true},{k:'name',t:'Name',strong:true},{k:'contactPerson',t:'Contact Person'},
+      {k:'phone',t:'Phone',mono:true},{k:'type',t:'Type'},{k:'status',t:'Status',badge:'status'}
+    ],
+    fields:[
+      {k:'name',t:'Vendor / Agent Name',type:'text',req:true},
+      {k:'type',t:'Type',type:'select',opts:['Vendor','Agent','GSA','Portal']},
+      {k:'contactPerson',t:'Contact Person',type:'text'},
+      {k:'email',t:'Email',type:'text'},
+      {k:'phone',t:'Phone',type:'text'},
+      {k:'address',t:'Address',type:'textarea',full:true},
+      {k:'status',t:'Status',type:'select',opts:['active','on_hold','blocked','inactive']}
+    ],
+    seed:[
+      {id:'EP-VN-001',name:'Galaxy Travels',type:'Vendor',contactPerson:'Mr. Sohel',email:'sohel@galaxy.com',phone:'+8801611000001',address:'Paltan, Dhaka',status:'active'},
+      {id:'EP-VN-002',name:'SkyLink GSA',type:'GSA',contactPerson:'Ms. Lima',email:'lima@skylink.com',phone:'+8801611000002',address:'Banani, Dhaka',status:'active'},
+      {id:'EP-VN-003',name:'Dubai Holidays Ltd',type:'Vendor',contactPerson:'Khalid Bin Walid',email:'k@dubaiholidays.ae',phone:'+97150000003',address:'Deira, Dubai',status:'on_hold'},
+      {id:'EP-VN-004',name:'Al-Haramain Agency',type:'Agent',contactPerson:'Abu Saleh',email:'saleh@haramain.com',phone:'+8801611000004',address:'Chattogram',status:'active'},
+      {id:'EP-VN-005',name:'Portal: Sabre',type:'Portal',contactPerson:'API',email:'support@sabre.com',phone:'—',address:'—',status:'inactive'}
+    ]
+  },
+  /* ---- Payment schedules ---- */
+  'payment-schedules':{
+    label:'Payment Schedules', icon:'📆', idPrefix:'PS',
+    title:'Payment Schedules', sub:'Payables & receivables timeline',
+    search:['party','type'], statusKey:'status',
+    statusOpts:['pending','approved','paid','cancelled'],
+    badgeMaps:{
+      status:{pending:'warn',approved:'info',paid:'ok',cancelled:'bad'},
+      type:{payable:'bad',receivable:'ok'},
+      priority:{High:'bad',Medium:'warn',Low:'muted'}
+    },
+    columns:[
+      {k:'party',t:'Party',strong:true},{k:'type',t:'Type',badge:'type'},{k:'amount',t:'Amount',money:true},
+      {k:'dueDate',t:'Due Date'},{k:'priority',t:'Priority',badge:'priority'},{k:'status',t:'Status',badge:'status'}
+    ],
+    fields:[
+      {k:'party',t:'Party',type:'text',req:true},
+      {k:'type',t:'Type',type:'select',opts:['payable','receivable'],req:true},
+      {k:'amount',t:'Amount (৳)',type:'number',req:true},
+      {k:'dueDate',t:'Due Date',type:'date',req:true},
+      {k:'priority',t:'Priority',type:'select',opts:['High','Medium','Low']},
+      {k:'status',t:'Status',type:'select',opts:['pending','approved','paid','cancelled']},
+      {k:'note',t:'Note',type:'textarea',full:true}
+    ],
+    rowActions:[
+      {key:'approve',icon:'✓',label:'Approve',run:r=>{if(r.status==='pending')r.status='approved';}},
+      {key:'pay',icon:'💳',label:'Mark Paid',run:r=>{r.status='paid';}}
+    ],
+    seed:[
+      {id:'PS-9001',party:'Dubai Holidays Ltd',type:'payable',amount:480000,dueDate:'2026-07-02',priority:'High',status:'pending',note:'Emirates block payment.'},
+      {id:'PS-9002',party:'Rahim Enterprise',type:'receivable',amount:112000,dueDate:'2026-06-30',priority:'Medium',status:'approved',note:'Ticket sale TS-5001.'},
+      {id:'PS-9003',party:'Al-Haramain Agency',type:'payable',amount:316000,dueDate:'2026-07-05',priority:'High',status:'pending',note:'Umrah visa lot.'},
+      {id:'PS-9004',party:'GreenLand Tours',type:'receivable',amount:184000,dueDate:'2026-07-08',priority:'Low',status:'pending',note:'Pending booking TS-5003.'},
+      {id:'PS-9005',party:'SkyLink GSA',type:'payable',amount:95000,dueDate:'2026-06-29',priority:'Medium',status:'paid',note:'Settled.'}
+    ]
+  }
+};
+
+/* ════════════════ STORE ════════════════ */
+const DB={};
+function lkey(k){return 'epal_tr_'+k;}
+function loadRes(k,seed){ try{const r=localStorage.getItem(lkey(k)); if(r) return JSON.parse(r);}catch(e){} return (seed||[]).map(x=>Object.assign({},x)); }
+function saveRes(k){ try{localStorage.setItem(lkey(k),JSON.stringify(DB[k]||[]));}catch(e){} }
+Object.keys(RES).forEach(k=>{ DB[k]=loadRes(k,RES[k].seed); });
+
+/* per-panel UI state (search / filter) */
+const UI={};
+function ui(k){ return UI[k]||(UI[k]={q:'',status:''}); }
+
+/* ════════════════ NAVIGATION ════════════════ */
+const NAV=[
+  {id:'dashboard',ic:'🏠',label:'Dashboard'},
+  {sec:'Operations'},
+  {grp:'air',ic:'✈️',label:'Air Ticketing',kids:[
+    {id:'tickets',ic:'🎫',label:'Ticket Inventory'},
+    {id:'ticket-sales',ic:'🧾',label:'Ticket Sales'},
+    {id:'airlines',ic:'🛩',label:'Airlines'},
+    {id:'airports',ic:'📍',label:'Airports'}
+  ]},
+  {grp:'visa',ic:'🛂',label:'Visa Processing',kids:[
+    {id:'visa',ic:'📋',label:'Application Board'},
+    {id:'visa-categories',ic:'🗂',label:'Visa Categories'},
+    {id:'passport-holders',ic:'📓',label:'Passport Holders'}
+  ]},
+  {grp:'crm',ic:'📈',label:'Sales & CRM',kids:[
+    {id:'customers',ic:'👥',label:'Customers'},
+    {id:'leads',ic:'🎯',label:'Leads'}
+  ]},
+  {grp:'partners',ic:'🤝',label:'Partners',kids:[
+    {id:'vendors',ic:'🏢',label:'Vendors & Agents'}
+  ]},
+  {grp:'finance',ic:'💳',label:'Finance',kids:[
+    {id:'payment-schedules',ic:'📆',label:'Payment Schedules'}
+  ]},
+  {sec:'My Workspace'},
+  {grp:'me',ic:'🧑‍💼',label:'Self Service',kids:[
+    {id:'ess-attendance',ic:'🕐',label:'My Attendance'},
+    {id:'ess-leave',ic:'🌴',label:'My Leave'},
+    {id:'ess-payslip',ic:'📄',label:'My Payslip'}
+  ]},
+  {id:'ess-tasks',ic:'✅',label:'My Tasks'},
+  {id:'ess-notices',ic:'🔔',label:'Notices'}
+];
+const LABELS={}; (function walk(a){a.forEach(n=>{if(n.kids){LABELS[n.grp]=n.label;walk(n.kids);}else if(n.id)LABELS[n.id]=n.label;});})(NAV);
+
+function buildNav(){
+  let html='';
+  NAV.forEach(n=>{
+    if(n.sec){ html+=`<div class="nav-sec">${esc(n.sec)}</div>`; return; }
+    if(n.grp){
+      html+=`<div class="nav-item nav-group" data-grp="${n.grp}" onclick="TR.toggleGrp('${n.grp}')"><span class="ic">${n.ic}</span> ${esc(n.label)} <span class="arr">›</span></div>`;
+      html+=`<div class="nav-sub" data-sub="${n.grp}">`;
+      n.kids.forEach(k=>{ html+=`<div class="nav-item" data-id="${k.id}" onclick="TR.show('${k.id}')"><span class="ic">${k.ic}</span> ${esc(k.label)}</div>`; });
+      html+=`</div>`;
+      return;
+    }
+    html+=`<div class="nav-item" data-id="${n.id}" onclick="TR.show('${n.id}')"><span class="ic">${n.ic}</span> ${esc(n.label)}</div>`;
+  });
+  $('side-nav').innerHTML=html;
+}
+function toggleGrp(g){ const el=document.querySelector(`.nav-group[data-grp="${g}"]`); if(el) el.classList.toggle('open'); }
+function setActiveNav(id){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const el=document.querySelector(`.nav-item[data-id="${id}"]`); if(el){ el.classList.add('active');
+    const sub=el.closest('.nav-sub'); if(sub){ const g=sub.getAttribute('data-sub'); const grp=document.querySelector(`.nav-group[data-grp="${g}"]`); if(grp) grp.classList.add('open'); } }
+}
+
+/* ════════════════ ROUTER ════════════════ */
+let current='dashboard';
+function show(id){
+  current=id;
+  setActiveNav(id);
+  const lbl=LABELS[id]||'Dashboard';
+  $('crumb').innerHTML=esc(lbl)+`<small>${esc((RES[id]&&RES[id].sub)||subFor(id))}</small>`;
+  if(id==='dashboard') return renderDashboard();
+  if(id==='ess-attendance') return renderAttendance();
+  if(id==='ess-leave') return renderLeave();
+  if(id==='ess-payslip') return renderPayslip();
+  if(id==='ess-tasks') return renderTasks();
+  if(id==='ess-notices') return renderNotices();
+  const r=RES[id]; if(!r){ $('content').innerHTML='<div class="box">Coming soon.</div>'; return; }
+  if(r.view==='board') return renderBoard(r);
+  return renderTable(r);
+}
+function subFor(id){ return ({'dashboard':'Welcome back','ess-attendance':'Your monthly attendance','ess-leave':'Leave balance & history','ess-payslip':'Salary breakdown','ess-tasks':'Your personal task board','ess-notices':'Company announcements'})[id]||''; }
+
+/* ════════════════ GENERIC TABLE ════════════════ */
+function val(r,c,row){
+  if(c.compute) return c.money?money(c.compute(row)):esc(c.compute(row));
+  let v=row[c.k];
+  if(c.badge){ const cls=((r.badgeMaps&&r.badgeMaps[c.badge])||{})[v]||'muted'; return `<span class="pill ${cls}">${esc(pretty(v))}</span>`; }
+  if(c.money) return money(v);
+  if(c.mono) return `<span class="mono">${esc(v)}</span>`;
+  if(c.strong) return `<span class="strong">${esc(v)}</span>`;
+  return esc(v);
+}
+function filtered(r){
+  let d=(DB[r.key]||[]).slice(); const u=ui(r.key);
+  if(u.q){ const q=u.q.toLowerCase(); d=d.filter(row=>(r.search||[]).some(f=>String(row[f]==null?'':row[f]).toLowerCase().includes(q))); }
+  if(u.status && r.statusKey){ d=d.filter(row=>row[r.statusKey]===u.status); }
+  return d;
+}
+function toolbar(r){
+  const u=ui(r.key);
+  const statusSel = r.statusOpts ? `<select onchange="TR.setStatus('${r.key}',this.value)"><option value="">All ${esc(pretty(r.statusKey))}</option>${r.statusOpts.map(o=>`<option value="${esc(o)}"${u.status===o?' selected':''}>${esc(pretty(o))}</option>`).join('')}</select>` : '';
+  return `<div class="toolbar">
+    <div class="search"><input id="tb-search" placeholder="Search ${esc(r.label.toLowerCase())}…" value="${esc(u.q)}" oninput="TR.search('${r.key}',this.value)"></div>
+    ${statusSel}
+    <button class="btn primary" onclick="TR.openNew('${r.key}')">＋ New</button>
+    <span class="ct" id="tb-ct"></span>
+  </div>`;
+}
+function renderTable(r){
+  r.key=r.key||keyOf(r);
+  const data=filtered(r);
+  const cols=r.columns;
+  const head=cols.map(c=>`<th>${esc(c.t)}</th>`).join('')+'<th style="text-align:right">Actions</th>';
+  const body=data.map(row=>{
+    const tds=cols.map(c=>`<td>${val(r,c,row)}</td>`).join('');
+    const extra=(r.rowActions||[]).map(a=>`<button class="tbtn" title="${esc(a.label)}" onclick="TR.action('${r.key}','${a.key}','${row.id}')">${a.icon}</button>`).join('');
+    return `<tr>${tds}<td style="text-align:right;white-space:nowrap">${extra}<button class="tbtn" title="Edit" onclick="TR.edit('${r.key}','${row.id}')">✏️</button><button class="tbtn danger" title="Delete" onclick="TR.del('${r.key}','${row.id}')">🗑</button></td></tr>`;
+  }).join('')||`<tr><td class="empty" colspan="${cols.length+1}">No records yet. Click “＋ New” to add one.</td></tr>`;
+  $('content').innerHTML=`<div class="ph"><div><h2>${esc(r.title)}</h2><div class="sub">${esc(r.sub||'')}</div></div></div>
+    ${toolbar(r)}
+    <div class="card"><table class="tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+  const ct=$('tb-ct'); if(ct) ct.textContent=data.length+' record'+(data.length===1?'':'s');
+}
+function keyOf(r){ return Object.keys(RES).find(k=>RES[k]===r); }
+
+/* ════════════════ KANBAN BOARD (visa) ════════════════ */
+let dragId=null;
+function renderBoard(r){
+  r.key=r.key||keyOf(r);
+  const data=filtered(r);
+  const cols=r.boardStatuses.map(s=>{
+    const items=data.filter(x=>x[r.statusKey]===s.k);
+    const cards=items.map(it=>{
+      const pcls=((r.badgeMaps&&r.badgeMaps.paymentStatus)||{})[it.paymentStatus]||'muted';
+      return `<div class="kcard" draggable="true" ondragstart="TR.kdragstart(event,'${it.id}')" ondragend="TR.kdragend(event)" onclick="TR.edit('${r.key}','${it.id}')">
+        <div class="t">${esc(it.applicant)}</div>
+        <div class="d">${esc(it.country)} · ${esc(it.visaType||'')}<br>${esc(it.id)} · 👤 ${esc(it.officer||'—')}</div>
+        <div class="foot"><span class="money">${money(it.salePrice)}</span><span class="pill ${pcls}">${esc(pretty(it.paymentStatus))}</span></div>
+      </div>`;
+    }).join('')||'<div class="kempty">—</div>';
+    return `<div class="kcol" ondragover="TR.kover(event,this)" ondragleave="this.classList.remove('over')" ondrop="TR.kdrop(event,'${r.key}','${s.k}',this)">
+      <div class="kcol-h"><span class="kdot" style="background:${s.c}"></span>${esc(s.t)}<span class="kct">${items.length}</span></div>${cards}</div>`;
+  }).join('');
+  $('content').innerHTML=`<div class="ph"><div><h2>${esc(r.title)}</h2><div class="sub">${esc(r.sub||'')}</div></div>
+    <div class="ph-r"><div class="search" style="min-width:200px;position:relative"><input id="tb-search" placeholder="Search applicants…" value="${esc(ui(r.key).q)}" oninput="TR.search('${r.key}',this.value)" style="width:100%;border:1px solid var(--border2);background:var(--bg2);border-radius:9px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;"></div>
+    <button class="btn primary" onclick="TR.openNew('${r.key}')">＋ New Application</button></div></div>
+    <div class="kanban">${cols}</div>`;
+}
+
+/* ════════════════ MODAL FORM ════════════════ */
+let modalKey=null, modalId=null;
+function openForm(key,id){
+  const r=RES[key]; if(!r) return;
+  modalKey=key; modalId=(id==null?null:id);
+  const row=(id!=null)?(DB[key].find(x=>x.id===id)||{}):{};
+  $('modal-ti').textContent=(id!=null?'Edit ':'New ')+r.label.replace(/s$/,'');
+  $('modal-form').innerHTML=r.fields.map(f=>{
+    const v=row[f.k]!=null?row[f.k]:'';
+    const opts=typeof f.opts==='function'?f.opts():f.opts;
+    let input;
+    if(f.type==='select'){
+      input=`<select id="f_${f.k}"><option value="">— select —</option>${(opts||[]).map(o=>{const ov=(o&&o.v!=null)?o.v:o;const ot=(o&&o.t!=null)?o.t:pretty(o);return `<option value="${esc(ov)}"${String(ov)===String(v)?' selected':''}>${esc(ot)}</option>`;}).join('')}</select>`;
+    } else if(f.type==='textarea'){
+      input=`<textarea id="f_${f.k}" rows="3">${esc(v)}</textarea>`;
+    } else {
+      const t=f.type==='number'?'number':f.type==='date'?'date':'text';
+      input=`<input id="f_${f.k}" type="${t}" value="${esc(v)}">`;
+    }
+    return `<div class="field${f.full?' full':''}"><label>${esc(f.t)}${f.req?' <span style="color:var(--red)">*</span>':''}</label>${input}</div>`;
+  }).join('');
+  $('modal-save').onclick=()=>saveForm();
+  $('modal').classList.add('open');
+}
+function saveForm(){
+  const r=RES[modalKey]; const data={};
+  for(const f of r.fields){ const el=$('f_'+f.k); let v=el?el.value:''; if(f.type==='number') v=(v===''?0:Number(v)); data[f.k]=v; }
+  for(const f of r.fields){ if(f.req && (data[f.k]===''||data[f.k]==null)){ alert('Please fill required field: '+f.t); return; } }
+  if(modalId!=null){ const row=DB[modalKey].find(x=>x.id===modalId); Object.assign(row,data); }
+  else { data.id=uid(r.idPrefix||'ID'); DB[modalKey].unshift(data); }
+  saveRes(modalKey); closeModal(); show(modalKey===current?current:modalKey);
+}
+function closeModal(){ $('modal').classList.remove('open'); modalKey=null; modalId=null; }
+
+/* ════════════════ DASHBOARD ════════════════ */
+function renderDashboard(){
+  const ts=DB['ticket-sales'], visa=DB['visa'], leads=DB['leads'];
+  const revenue=sum(ts,x=>x.sale)+sum(visa.filter(v=>v.paymentStatus==='paid'),x=>x.salePrice);
+  const visaActive=visa.filter(v=>!['approved','rejected'].includes(v.status)).length;
+  const visaApproved=visa.filter(v=>v.status==='approved').length;
+  const leadsOpen=leads.filter(l=>!['won','lost'].includes(l.status)).length;
+  const due=DB['payment-schedules'].filter(p=>p.status!=='paid'&&p.status!=='cancelled');
+  $('content').innerHTML=`
+    <div class="hero">
+      <div class="av">${esc(EMP.initials)}</div>
+      <div><h2>Good morning, ${esc(EMP.name.split(' ')[0])} 👋</h2>
+        <div class="sub">${esc(EMP.desig)} · ${esc(EMP.dept)} · ${esc(EMP.id)}</div></div>
+      <div class="today">Today<b>${esc(TODAY)}</b><span style="font-size:11.5px;">Clocked in 08:54 AM</span></div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="lbl">💰 Revenue (this month)</div><div class="val" style="color:var(--green)">${money(revenue)}</div><div class="meta">Tickets + paid visas</div></div>
+      <div class="kpi"><div class="lbl">🎫 Tickets Sold</div><div class="val">${ts.length}</div><div class="meta">${ts.filter(x=>x.paymentStatus==='paid').length} paid · ${ts.filter(x=>x.paymentStatus!=='paid').length} pending</div></div>
+      <div class="kpi"><div class="lbl">🛂 Visa Applications</div><div class="val">${visaActive}</div><div class="meta">${visaApproved} approved · ${visa.length} total</div></div>
+      <div class="kpi"><div class="lbl">🎯 Open Leads</div><div class="val">${leadsOpen}</div><div class="meta">${leads.filter(l=>l.status==='won').length} won this month</div></div>
+    </div>
+    <div class="two">
+      <div>
+        <div class="box"><h3>🧾 Recent Ticket Sales <span class="sp" onclick="TR.show('ticket-sales')">Open →</span></h3>
+          <table class="tbl"><thead><tr><th>Invoice</th><th>Customer</th><th>Route</th><th>Sale</th><th>Payment</th></tr></thead><tbody>
+          ${ts.slice(0,5).map(x=>`<tr><td class="mono">${esc(x.id)}</td><td class="strong">${esc(x.customer)}</td><td>${esc(x.route)}</td><td>${money(x.sale)}</td><td><span class="pill ${({paid:'ok',partial:'warn',due:'bad'})[x.paymentStatus]||'muted'}">${esc(pretty(x.paymentStatus))}</span></td></tr>`).join('')}
+          </tbody></table>
+        </div>
+        <div class="box"><h3>🛂 Visa Pipeline <span class="sp" onclick="TR.show('visa')">Open board →</span></h3>
+          <table class="tbl"><thead><tr><th>App#</th><th>Applicant</th><th>Country</th><th>Stage</th><th>Sale</th></tr></thead><tbody>
+          ${visa.filter(v=>!['approved','rejected'].includes(v.status)).slice(0,5).map(v=>`<tr><td class="mono">${esc(v.id)}</td><td class="strong">${esc(v.applicant)}</td><td>${esc(v.country)}</td><td>${esc(pretty(v.status))}</td><td>${money(v.salePrice)}</td></tr>`).join('')}
+          </tbody></table>
+        </div>
+      </div>
+      <div>
+        <div class="box"><h3>💳 Payments Due <span class="sp" onclick="TR.show('payment-schedules')">View →</span></h3>
+          ${due.slice(0,5).map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--border);font-size:13px;"><div><div class="strong">${esc(p.party)}</div><div style="font-size:11.5px;color:var(--text3)">${esc(pretty(p.type))} · due ${esc(p.dueDate)}</div></div><div style="font-weight:700;color:${p.type==='payable'?'var(--red)':'var(--green)'}">${money(p.amount)}</div></div>`).join('')||'<div style="color:var(--text3);font-size:13px;padding:8px 0">Nothing due 🎉</div>'}
+        </div>
+        <div class="box"><h3>🎯 Hot Leads <span class="sp" onclick="TR.show('leads')">View →</span></h3>
+          ${leads.filter(l=>!['won','lost'].includes(l.status)).slice(0,5).map(l=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px dashed var(--border);font-size:13px;"><div><div class="strong">${esc(l.name)}</div><div style="font-size:11.5px;color:var(--text3)">${esc(pretty(l.type))} · ${esc(l.source)}</div></div><span class="pill ${({new:'info',contacted:'purple',qualified:'warn',proposal_sent:'warn',negotiation:'warn'})[l.status]||'muted'}">${esc(pretty(l.status))}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ════════════════ PERSONAL (ESS) PAGES ════════════════ */
+const ATT=[
+  ['22 Jun','Present','08:54','18:06','9h 12m','ok'],['23 Jun','Present','08:59','18:02','9h 03m','ok'],
+  ['24 Jun','Late','09:38','18:20','8h 42m','warn'],['25 Jun','Present','08:50','18:05','9h 15m','ok'],
+  ['26 Jun','Present','08:57','18:01','9h 04m','ok'],['27 Jun','Leave','—','—','Casual Leave','info'],
+  ['28 Jun','Present','08:54','—','In progress','ok']
+];
+const LEAVE=[
+  ['LV-3041','Casual','27 Jun 2026','27 Jun 2026','1','Personal work','Approved','ok'],
+  ['LV-3032','Sick','14 May 2026','15 May 2026','2','Fever','Approved','ok'],
+  ['LV-3028','Annual','10 Jul 2026','14 Jul 2026','5','Family trip','Pending','warn']
+];
+const NOTICES=[
+  {ic:'📢',ti:'Eid-ul-Adha holiday & ticketing roster',bd:'Front desk roster for the Eid rush is published. Check your assigned counter shifts.',dt:'Today',tag:'Operations'},
+  {ic:'✈️',ti:'Emirates block-seat fares updated',bd:'New DAC-DXB block fares effective 1 July. Update quotes accordingly.',dt:'1 day ago',tag:'Air Ticketing'},
+  {ic:'🛂',ti:'KSA Umrah visa season briefing',bd:'Mandatory briefing on the new Nusuk requirements, 30 June 11 AM.',dt:'2 days ago',tag:'Visa'},
+  {ic:'🏆',ti:'Top Consultant — May 2026',bd:'Congratulations to the Travels team for crossing ৳1.2 crore in sales.',dt:'1 week ago',tag:'Notice'}
+];
+function essHeader(title,sub){ return `<div class="ph"><div><h2>${esc(title)}</h2><div class="sub">${esc(sub)}</div></div></div>`; }
+function renderAttendance(){
+  const present=ATT.filter(a=>a[1]==='Present').length, late=ATT.filter(a=>a[1]==='Late').length;
+  $('content').innerHTML=essHeader('My Attendance','June 2026 — daily log')+
+    `<div class="bal"><div class="b"><div class="n">${present}</div><div class="t">Present</div></div>
+      <div class="b"><div class="n" style="color:var(--amber)">${late}</div><div class="t">Late</div></div>
+      <div class="b"><div class="n" style="color:var(--red)">0</div><div class="t">Absent</div></div>
+      <div class="b"><div class="n" style="color:var(--green)">1</div><div class="t">Leave</div></div></div>
+    <div class="card"><table class="tbl"><thead><tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th>Worked / Note</th></tr></thead><tbody>
+    ${ATT.map(a=>`<tr><td class="strong">${a[0]}</td><td><span class="pill ${a[5]}">${a[1]}</span></td><td class="mono">${a[2]}</td><td class="mono">${a[3]}</td><td>${a[4]}</td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+function renderLeave(){
+  $('content').innerHTML=essHeader('My Leave','Balance & request history')+
+    `<div class="bal"><div class="b"><div class="n">12</div><div class="t">Annual left</div></div>
+      <div class="b"><div class="n">7</div><div class="t">Casual left</div></div>
+      <div class="b"><div class="n">9</div><div class="t">Sick left</div></div></div>
+    <div class="card"><table class="tbl"><thead><tr><th>Ref</th><th>Type</th><th>From</th><th>To</th><th>Days</th><th>Reason</th><th>Status</th></tr></thead><tbody>
+    ${LEAVE.map(l=>`<tr><td class="mono">${l[0]}</td><td>${l[1]}</td><td>${l[2]}</td><td>${l[3]}</td><td>${l[4]}</td><td>${esc(l[5])}</td><td><span class="pill ${l[7]}">${l[6]}</span></td></tr>`).join('')}
+    </tbody></table></div>`;
+}
+function renderPayslip(){
+  const earn=[['Basic',24000],['House Rent',12000],['Medical',3000],['Sales Incentive',6500]];
+  const ded=[['PF Contribution',2400],['Tax (TDS)',1200],['Advance Adjust',2000]];
+  const gross=sum(earn,x=>x[1]), totalDed=sum(ded,x=>x[1]), net=gross-totalDed;
+  $('content').innerHTML=essHeader('My Payslip','June 2026')+
+    `<div class="box"><div class="pay">
+      <div><div class="ph2">Earnings</div>${earn.map(e=>`<div class="row"><span>${e[0]}</span><span>${money(e[1])}</span></div>`).join('')}<div class="row tot"><span>Gross</span><span>${money(gross)}</span></div></div>
+      <div><div class="ph2">Deductions</div>${ded.map(d=>`<div class="row"><span>${d[0]}</span><span>${money(d[1])}</span></div>`).join('')}<div class="row tot"><span>Total Deductions</span><span>${money(totalDed)}</span></div></div>
+    </div>
+    <div style="margin-top:18px;padding:16px;border-radius:12px;background:linear-gradient(120deg,#1d4ed8,#7c3aed);color:#fff;display:flex;justify-content:space-between;align-items:center;">
+      <div><div style="font-size:12px;opacity:.85">NET PAYABLE — June 2026</div><div style="font-size:26px;font-weight:700;margin-top:3px">${money(net)}</div></div>
+      <button class="btn ghost" onclick="window.print()">🖨 Print</button>
+    </div></div>`;
+}
+function renderNotices(){
+  $('content').innerHTML=essHeader('Notices','Company announcements & reminders')+
+    `<div class="box">${NOTICES.map(n=>`<div class="notice"><span class="ic">${n.ic}</span><div><div class="ti">${esc(n.ti)}</div><div class="bd">${esc(n.bd)}</div><div class="dt">${esc(n.dt)} · ${esc(n.tag)}</div></div></div>`).join('')}</div>`;
+}
+
+/* ---- My Tasks (personal kanban, localStorage) ---- */
+const TASK_COLS=[{k:'todo',t:'To Do',c:'#94a3b8'},{k:'progress',t:'In Progress',c:'#2563eb'},{k:'done',t:'Done',c:'#16a34a'}];
+DB['_tasks']=loadRes('_tasks',[
+  {id:'TKM-1',t:'Issue Emirates tickets for Rahim Enterprise',p:'High',s:'progress'},
+  {id:'TKM-2',t:'Follow up Schengen docs — Rumana Begum',p:'High',s:'todo'},
+  {id:'TKM-3',t:'Send Umrah package quote to Delwar',p:'Medium',s:'progress'},
+  {id:'TKM-4',t:'Reconcile SkyLink GSA payment',p:'Low',s:'todo'},
+  {id:'TKM-5',t:'Confirm Malaysia visa submission',p:'Medium',s:'done'}
+]);
+function renderTasks(){
+  const tasks=DB['_tasks'];
+  const cols=TASK_COLS.map(col=>{
+    const items=tasks.filter(t=>t.s===col.k);
+    const cards=items.map(t=>{
+      const idx=TASK_COLS.findIndex(c=>c.k===col.k);
+      const left=idx>0?`<button class="mv" title="Move left" onclick="event.stopPropagation();TR.taskMove('${t.id}','${TASK_COLS[idx-1].k}')">‹</button>`:'';
+      const right=idx<TASK_COLS.length-1?`<button class="mv" title="Move right" onclick="event.stopPropagation();TR.taskMove('${t.id}','${TASK_COLS[idx+1].k}')">›</button>`:'';
+      const pcls=({High:'bad',Medium:'warn',Low:'ok'})[t.p]||'muted';
+      return `<div class="kcard"><div class="t">${esc(t.t)}</div><div class="foot"><span class="pill ${pcls}">${esc(t.p)}</span><span style="margin-left:auto;display:flex;gap:5px">${left}${right}<button class="mv" title="Delete" onclick="TR.taskDel('${t.id}')">✕</button></span></div></div>`;
+    }).join('')||'<div class="kempty">—</div>';
+    return `<div class="kcol"><div class="kcol-h"><span class="kdot" style="background:${col.c}"></span>${col.t}<span class="kct">${items.length}</span></div>${cards}</div>`;
+  }).join('');
+  $('content').innerHTML=essHeader('My Tasks','Your personal task board')+
+    `<div class="addbar"><input id="task-in" placeholder="Add a task and press Enter…" onkeydown="if(event.key==='Enter')TR.taskAdd()"><button class="btn primary" onclick="TR.taskAdd()">＋ Add</button></div>
+     <div class="kanban">${cols}</div>`;
+}
+
+/* ════════════════ PUBLIC API (inline handlers) ════════════════ */
+const TR={
+  show, toggleGrp,
+  openNew:k=>openForm(k,null),
+  edit:(k,id)=>openForm(k,id),
+  closeModal,
+  del:(k,id)=>{ if(!confirm('Delete this record?'))return; DB[k]=DB[k].filter(x=>x.id!==id); saveRes(k); show(k); },
+  action:(k,act,id)=>{ const r=RES[k]; const a=(r.rowActions||[]).find(x=>x.key===act); const row=DB[k].find(x=>x.id===id); if(a&&row){ a.run(row); saveRes(k); show(k); } },
+  search:(k,v)=>{ ui(k).q=v; const r=RES[k]; (r.view==='board'?renderBoard:renderTable)(r); const s=$('tb-search'); if(s){ s.focus(); s.setSelectionRange(s.value.length,s.value.length); } },
+  setStatus:(k,v)=>{ ui(k).status=v; renderTable(RES[k]); },
+  /* board DnD */
+  kdragstart:(e,id)=>{ dragId=id; e.dataTransfer.effectAllowed='move'; e.currentTarget.classList.add('dragging'); },
+  kdragend:(e)=>{ e.currentTarget.classList.remove('dragging'); },
+  kover:(e,el)=>{ e.preventDefault(); el.classList.add('over'); },
+  kdrop:(e,k,st,el)=>{ e.preventDefault(); el.classList.remove('over'); const row=DB[k].find(x=>x.id===dragId); if(row&&row[RES[k].statusKey]!==st){ row[RES[k].statusKey]=st; saveRes(k); renderBoard(RES[k]); } dragId=null; },
+  /* tasks */
+  taskAdd:()=>{ const i=$('task-in'); if(!i||!i.value.trim())return; DB['_tasks'].unshift({id:uid('TKM'),t:i.value.trim(),p:'Medium',s:'todo'}); saveRes('_tasks'); renderTasks(); },
+  taskMove:(id,s)=>{ const t=DB['_tasks'].find(x=>x.id===id); if(t){ t.s=s; saveRes('_tasks'); renderTasks(); } },
+  taskDel:(id)=>{ DB['_tasks']=DB['_tasks'].filter(x=>x.id!==id); saveRes('_tasks'); renderTasks(); }
+};
+window.TR=TR;
+
+/* assign key onto each schema for convenience */
+Object.keys(RES).forEach(k=>RES[k].key=k);
+
+/* ---- boot ---- */
+$('me-av').textContent=EMP.initials; $('me-nm').textContent=EMP.name; $('me-rl').textContent=EMP.desig;
+buildNav();
+show('dashboard');
+</script>
+</body>
+</html>
