@@ -43,3 +43,12 @@ TP.onReady(cb)         // run registration safely
   (renew passport, mark paid); reads live data from core resources.
 - **expense/** — Expense Claims (ESS): submit reimbursement with receipt, track
   status, month totals. Lives under the Self Service group.
+- **tasks/** — Task Management (team): board + list views, assignee, priority,
+  due dates, labels, checklists with progress, comments, filters, drag-drop, rich
+  detail modal. (`window.TSK`)
+- **visa-pro/** — Visa Management: lifecycle board + list, tabbed detail
+  (Overview / Documents checklist / Payments / Timeline), SLA travel countdown,
+  officer assignment. (`window.VZ`)
+- **ticketing/** — Air Ticketing: bookings + KPIs, multi-passenger, PNR, fare
+  breakdown (base + taxes), cost/profit/due, and operations (Issue, Re-issue,
+  Refund, Void, EMD) each logged to a history timeline. (`window.TK`)
