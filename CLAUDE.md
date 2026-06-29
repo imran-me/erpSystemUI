@@ -23,9 +23,12 @@ The owner ("the boss") / stakeholder is **MD**; many design decisions are tagged
 - A feature must render **all its sections** so the user can do **test input** right away.
 - **Never delete** existing features/content.
 
-## Where new work goes (decided 2026-06-29)
-- **New features → `travel.html`** (the Epal Travels Employee Portal). It's the home for new modular features via `window.TravelPortal`. Build there unless told otherwise.
-- **EON → every page.** Currently embedded in both `travel.html` and `erp-combined.html`. `index.html` is just a redirect (no EON needed). Any new top-level page must get the same EON embed (import-map + 3 CSS + module script).
+## Where new work goes (updated 2026-06-29)
+- **`erp-combined.html` is the real product.** It has a Role-Based Access (RBAC) "View As" switcher (`#rbac-system` script). Switching to **Travels Agent** (`agent` role) filters the sidebar to the Travels company + travel-service panels (`G.tvSvc`). Panels are `.erp-panel#erp-panel-<id>`, shown via `showErpPanel(id, navEl)`; registered in `erpPanels`/`erpTitles`; visibility gated by `canPanel(id)` per role.
+- **New travel features → build in `travel.html`** (modular via `window.TravelPortal`, each in its own `features/<name>/` folder). The whole suite is then surfaced **inside `erp-combined.html`** as the **Smart Suite** panel (`features/erp-travel-suite/suite.js`): a lazy iframe of `travel.html` mounted under the Travels menu, id `tv-suite`, allowed for the `agent` role. It appears when you switch role to **Travels Agent**.
+  - Why an iframe: `travel.html` reuses component classes (`.modal`, `.card`, `.kpi`, `.tbl`, `.btn`…) that `erp-combined.html` defines differently — embedding keeps both fully styled with zero CSS conflict. New `/features` show up automatically.
+  - To make a feature a **native** erp-combined sidebar item instead, it would need scoped CSS (a `.tps` wrapper) — larger refactor, not done yet.
+- **EON → every page.** Embedded in both `travel.html` and `erp-combined.html`. `index.html` is just a redirect. New top-level pages get the same embed (import-map + 3 CSS + module script).
 
 ## EON AI companion
 - Lives entirely in `ai-companion/`; embedded via an import-map (`three`) + 3 CSS links + `<script type="module" src="ai-companion/js/main.js">`.
