@@ -13,6 +13,10 @@ var TYPES=['Flight','Visa','Hotel','Transfer','Tour','Insurance','Other'];
 var CUR=['৳','$','SAR','AED'];
 var STATUS=['Draft','Sent','Accepted','Rejected'];
 var SPILL={Draft:'#94a3b8',Sent:'#2563eb',Accepted:'#16a34a',Rejected:'#dc2626'};
+/* pull the shared Other Services catalog so quotes can include add-on services */
+function svcCatalog(){try{var r=localStorage.getItem('epal_tv_other_services');if(r){return JSON.parse(r).filter(function(s){return s.active;});}}catch(e){}
+  return [{name:'Passport Processing',cat:'Passport',price:3000},{name:'Bank Statement / Solvency',cat:'Document',price:2000},{name:'Travel Insurance',cat:'Insurance',price:1500},{name:'Airport Transfer',cat:'Transfer',price:2000},{name:'Visa Attestation',cat:'Document',price:2500}];}
+function svcType(cat){return ['Flight','Visa','Hotel','Transfer','Tour','Insurance'].indexOf(cat)>=0?cat:'Other';}
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c];});}
 function uid(){return 'QT-'+String(Date.now()).slice(-5)+Math.floor(Math.random()*90+10);}
@@ -83,7 +87,11 @@ function editor(r){ var q=draft;
      +'<div class="tvq-f"><label>Valid Till</label><input data-f="valid" type="date" value="'+esc(q.valid||'')+'"></div>'
      +'<div class="tvq-f"><label>Currency</label><select data-f="currency">'+opt(CUR,q.currency)+'</select></div>'
    +'</div></div>'
-   +'<div class="tvq-card tvq-pad"><div class="tvq-h">📦 Line Items <button class="erp-btn btn-sm" style="margin-left:auto" onclick="tvqAddItem()">＋ Add line item</button></div>'
+   +'<div class="tvq-card tvq-pad"><div class="tvq-h">📦 Line Items '
+     +'<span style="margin-left:auto;display:flex;gap:7px;align-items:center;flex-wrap:wrap">'
+       +'<select id="tvq-svc" style="border:1px solid var(--border2,#d0d6e8);background:var(--bg);border-radius:8px;padding:6px 9px;font-size:12px;font-family:inherit;max-width:230px">'+svcCatalog().map(function(s,i){return '<option value="'+i+'">'+esc(s.name)+' — '+money(s.price,q.currency)+'</option>';}).join('')+'</select>'
+       +'<button class="erp-btn btn-sm btn-ghost" onclick="tvqAddSvc()">＋ Service</button>'
+       +'<button class="erp-btn btn-sm" onclick="tvqAddItem()">＋ Add line item</button></span></div>'
      +'<table class="tvq-tbl"><thead><tr><th>Type</th><th>Description</th><th>Qty</th><th>Unit Cost</th><th>Unit Sale</th><th>Line Total</th><th>Profit</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
    +'<div class="tvq-two">'
      +'<div class="tvq-card tvq-pad"><div class="tvq-h">💸 Charges</div><div class="tvq-grid">'
@@ -120,6 +128,7 @@ window.tvqEdit=function(id){var q=QUOTES.find(function(x){return x.id===id;});if
 window.tvqDel=function(id){if(!confirm('Delete this quotation?'))return;QUOTES=QUOTES.filter(function(x){return x.id!==id;});save();render();};
 window.tvqBack=function(){view='list';draft=null;editId=null;render();};
 window.tvqAddItem=function(){sync();draft.items.push({type:'Flight',desc:'',qty:1,cost:0,sale:0});render();};
+window.tvqAddSvc=function(){sync();var sel=document.getElementById('tvq-svc');if(!sel)return;var cat=svcCatalog();var s=cat[+sel.value];if(!s)return;draft.items.push({type:svcType(s.cat),desc:s.name,qty:1,cost:0,sale:+s.price||0});render();};
 window.tvqDelItem=function(i){sync();draft.items.splice(i,1);render();};
 window.tvqSave=function(){sync();if(!draft.customer||!draft.customer.trim()){alert('Customer is required.');return;}
   var i=QUOTES.findIndex(function(x){return x.id===draft.id;}); if(i>=0)QUOTES[i]=JSON.parse(JSON.stringify(draft)); else QUOTES.unshift(JSON.parse(JSON.stringify(draft)));
