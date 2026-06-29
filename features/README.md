@@ -38,3 +38,8 @@ TP.onReady(cb)         // run registration safely
   live profit & VAT calc, mock WhatsApp send, convert-to-booking, print/PDF.
 - **states/** — States master (state/province per country). Full CRUD via
   `registerResource`; example of the smallest possible feature.
+- **compliance/** — Expiry & Compliance Center: passport expiry windows (30/60/90),
+  visa travel-date countdown, unsold ticket stock, overdue payments. Interactive
+  (renew passport, mark paid); reads live data from core resources.
+- **expense/** — Expense Claims (ESS): submit reimbursement with receipt, track
+  status, month totals. Lives under the Self Service group.
