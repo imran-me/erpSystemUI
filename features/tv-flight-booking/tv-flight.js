@@ -124,7 +124,7 @@ function bookForm(r){
        +'<span style="font-size:11px;color:var(--text3);margin-left:auto;align-self:center">Manage catalog in “Other Services”</span></div></div>'
    +'<div class="tvf-two">'
      +'<div class="tvf-card tvf-pad"><div class="tvf-h">📇 Contact &amp; Vendor</div><div class="tvf-sgrid2">'
-       +'<div class="tvf-f"><label>Customer</label><input id="tvf-cust" value="'+esc(draft.customer)+'" placeholder="Customer / company"></div>'
+       +'<div class="tvf-f"><label>Customer <span class="req">*</span></label><input id="tvf-cust" value="'+esc(draft.customer)+'" placeholder="Customer / company"></div>'
        +'<div class="tvf-f"><label>Phone</label><input id="tvf-phone" value="'+esc(draft.phone)+'" placeholder="+8801..."></div>'
        +'<div class="tvf-f"><label>Email</label><input id="tvf-email" value="'+esc(draft.email)+'" placeholder="email@example.com"></div>'
        +'<div class="tvf-f"><label>Hold / Issue</label><select id="tvf-mode"><option value="Hold">Hold (PNR only)</option><option value="Confirmed">Issue now</option></select></div>'

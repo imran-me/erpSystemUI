@@ -54,7 +54,7 @@ function render(){var r=root();if(!r)return;injectCss();
    +'</div>'
    +'<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px;font-size:12.5px;color:#1e40af;margin-bottom:14px">💡 These services appear as <b>add-ons</b> when invoicing a main sale (e.g. Flight Booking → Add-on services).</div>'
    +'<div class="tvo-card tvo-pad"><div class="tvo-h">➕ Add Service</div><div class="tvo-add">'
-     +'<input id="tvo-name" placeholder="Service name" style="flex:1;min-width:180px">'
+     +'<input id="tvo-name" placeholder="Service name *" style="flex:1;min-width:180px">'
      +'<select id="tvo-cat">'+CATS.map(function(c){return '<option>'+esc(c)+'</option>';}).join('')+'</select>'
      +'<input id="tvo-price" type="number" placeholder="Default price ৳" style="width:150px">'
      +'<button class="erp-btn btn-primary" onclick="tvoAdd()">Add</button></div></div>'

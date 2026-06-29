@@ -81,7 +81,7 @@ function editor(r){ var q=draft;
    +'<div style="display:flex;gap:10px;align-items:center;margin-bottom:14px"><button class="erp-btn btn-ghost" onclick="tvqBack()">← Back to list</button>'
      +'<span class="mono" style="color:var(--text3);font-size:13px">'+esc(q.id)+'</span></div>'
    +'<div class="tvq-card tvq-pad"><div class="tvq-h">🧾 Quotation Info</div><div class="tvq-grid">'
-     +'<div class="tvq-f"><label>Customer</label><input data-f="customer" value="'+esc(q.customer||'')+'" placeholder="Customer / company"></div>'
+     +'<div class="tvq-f"><label>Customer <span class="req">*</span></label><input data-f="customer" value="'+esc(q.customer||'')+'" placeholder="Customer / company"></div>'
      +'<div class="tvq-f"><label>Status</label><select data-f="status">'+opt(STATUS,q.status)+'</select></div>'
      +'<div class="tvq-f"><label>Quote Date</label><input data-f="date" type="date" value="'+esc(q.date||'')+'"></div>'
      +'<div class="tvq-f"><label>Valid Till</label><input data-f="valid" type="date" value="'+esc(q.valid||'')+'"></div>'

@@ -151,7 +151,7 @@ function detail(r){
      +'<select id="tva-kind">'+KINDS.map(function(k){return '<option>'+esc(k.k)+'</option>';}).join('')+'</select>'
      +'<input id="tva-ref" placeholder="Ref / voucher" style="width:130px">'
      +'<input id="tva-desc" placeholder="Description" style="flex:1;min-width:160px">'
-     +'<input id="tva-amt" type="number" placeholder="Amount ৳" style="width:120px">'
+     +'<input id="tva-amt" type="number" placeholder="Amount ৳ *" style="width:120px">'
      +'<button class="erp-btn btn-primary" onclick="tvaAddTxn()">Post</button>'
    +'</div></div>'
    +'<div class="tva-card"><table class="tva-tbl"><thead><tr><th>Date</th><th>Voucher</th><th>Particulars</th><th>Debit</th><th>Credit</th><th>Balance</th><th></th></tr></thead><tbody>'+ledger+'</tbody></table></div>';
