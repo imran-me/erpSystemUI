@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Epal Travels — Employee Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!-- ════ EON AI COMPANION (modular — lives in /ai-companion) · New ════ -->
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<link rel="stylesheet" href="ai-companion/css/companion.css">
+<link rel="stylesheet" href="ai-companion/css/home.css">
+<link rel="stylesheet" href="ai-companion/css/animations.css">
+
 <style>
 :root{
   --bg:#f4f6fb; --bg2:#ffffff; --bg3:#f0f2f8; --border:#e4e8f0; --border2:#d0d6e8;
@@ -92,6 +101,14 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px;}
 .pill.info{background:rgba(37,99,235,.13);color:#2563eb;}
 .pill.purple{background:rgba(124,58,237,.13);color:#7c3aed;}
 .pill.muted{background:var(--bg3);color:var(--text2);}
+
+/* ---------- "New" badge — marks anything added during prototyping ---------- */
+.badge-new{display:inline-block;font-size:8.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;
+  background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;padding:1px 5px;border-radius:6px;
+  vertical-align:middle;margin-left:6px;box-shadow:0 1px 3px rgba(22,163,74,.4);}
+.nav-item .badge-new{margin-left:auto;}
+.nav-sub .nav-item .badge-new{margin-left:auto;}
+h2 .badge-new,h3 .badge-new{font-size:9.5px;}
 
 /* ---------- KPI cards / dashboard ---------- */
 .hero{background:linear-gradient(120deg,#1d4ed8,#2563eb 55%,#7c3aed);color:#fff;border-radius:16px;padding:22px 24px;margin-bottom:20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;box-shadow:0 10px 26px rgba(37,99,235,.28);}
@@ -590,18 +607,19 @@ const NAV=[
 ];
 const LABELS={}; (function walk(a){a.forEach(n=>{if(n.kids){LABELS[n.grp]=n.label;walk(n.kids);}else if(n.id)LABELS[n.id]=n.label;});})(NAV);
 
+const nb=n=>n&&n.nw?'<span class="badge-new">New</span>':'';   /* New badge helper · New */
 function buildNav(){
   let html='';
   NAV.forEach(n=>{
     if(n.sec){ html+=`<div class="nav-sec">${esc(n.sec)}</div>`; return; }
     if(n.grp){
-      html+=`<div class="nav-item nav-group" data-grp="${n.grp}" onclick="TR.toggleGrp('${n.grp}')"><span class="ic">${n.ic}</span> ${esc(n.label)} <span class="arr">›</span></div>`;
+      html+=`<div class="nav-item nav-group" data-grp="${n.grp}" onclick="TR.toggleGrp('${n.grp}')"><span class="ic">${n.ic}</span> ${esc(n.label)} ${nb(n)}<span class="arr">›</span></div>`;
       html+=`<div class="nav-sub" data-sub="${n.grp}">`;
-      n.kids.forEach(k=>{ html+=`<div class="nav-item" data-id="${k.id}" onclick="TR.show('${k.id}')"><span class="ic">${k.ic}</span> ${esc(k.label)}</div>`; });
+      n.kids.forEach(k=>{ html+=`<div class="nav-item" data-id="${k.id}" onclick="TR.show('${k.id}')"><span class="ic">${k.ic}</span> ${esc(k.label)} ${nb(k)}</div>`; });
       html+=`</div>`;
       return;
     }
-    html+=`<div class="nav-item" data-id="${n.id}" onclick="TR.show('${n.id}')"><span class="ic">${n.ic}</span> ${esc(n.label)}</div>`;
+    html+=`<div class="nav-item" data-id="${n.id}" onclick="TR.show('${n.id}')"><span class="ic">${n.ic}</span> ${esc(n.label)} ${nb(n)}</div>`;
   });
   $('side-nav').innerHTML=html;
 }
@@ -613,12 +631,15 @@ function setActiveNav(id){
 }
 
 /* ════════════════ ROUTER ════════════════ */
+/* PAGES = pages registered by modular features (see window.TravelPortal). New */
+const PAGES={}, SUBS={};
 let current='dashboard';
 function show(id){
   current=id;
   setActiveNav(id);
   const lbl=LABELS[id]||'Dashboard';
   $('crumb').innerHTML=esc(lbl)+`<small>${esc((RES[id]&&RES[id].sub)||subFor(id))}</small>`;
+  if(PAGES[id]) return PAGES[id].render($('content'));   // modular feature page · New
   if(id==='dashboard') return renderDashboard();
   if(id==='ess-attendance') return renderAttendance();
   if(id==='ess-leave') return renderLeave();
@@ -629,7 +650,7 @@ function show(id){
   if(r.view==='board') return renderBoard(r);
   return renderTable(r);
 }
-function subFor(id){ return ({'dashboard':'Welcome back','ess-attendance':'Your monthly attendance','ess-leave':'Leave balance & history','ess-payslip':'Salary breakdown','ess-tasks':'Your personal task board','ess-notices':'Company announcements'})[id]||''; }
+function subFor(id){ return SUBS[id]||({'dashboard':'Welcome back','ess-attendance':'Your monthly attendance','ess-leave':'Leave balance & history','ess-payslip':'Salary breakdown','ess-tasks':'Your personal task board','ess-notices':'Company announcements'})[id]||''; }
 
 /* ════════════════ GENERIC TABLE ════════════════ */
 function val(r,c,row){
@@ -887,10 +908,61 @@ window.TR=TR;
 /* assign key onto each schema for convenience */
 Object.keys(RES).forEach(k=>RES[k].key=k);
 
+/* ════════════════ MODULAR FEATURE API (window.TravelPortal) · New ════════════════
+   Lets self-contained features in /features/<name>/ plug into this portal without
+   editing the core: register a page renderer or a full CRUD resource, add nav
+   entries (optionally flagged `nw:true` to show a "New" badge), reuse helpers. */
+function findGroup(grp){ return NAV.find(n=>n.grp===grp); }
+function addGroup(o){ // {grp,label,ic,nw,section}
+  if(findGroup(o.grp)) return findGroup(o.grp);
+  const g={grp:o.grp,ic:o.ic||'📦',label:o.label||o.grp,kids:[],nw:!!o.nw};
+  const wsIdx=NAV.findIndex(n=>n.sec==='My Workspace');
+  if(o.section && !NAV.some(n=>n.sec===o.section)){ NAV.splice(wsIdx<0?NAV.length:wsIdx,0,{sec:o.section}); }
+  const at=NAV.findIndex(n=>n.sec==='My Workspace'); NAV.splice(at<0?NAV.length:at,0,g);
+  return g;
+}
+function addNavItem(o){ // {id,label,ic,group,nw}
+  const item={id:o.id,ic:o.ic||'•',label:o.label||o.id,nw:!!o.nw};
+  if(o.group){ const g=findGroup(o.group)||addGroup({grp:o.group,label:o.group}); g.kids.push(item); }
+  else { const at=NAV.findIndex(n=>n.sec==='My Workspace'); NAV.splice(at<0?NAV.length:at,0,item); }
+  LABELS[o.id]=o.label||o.id;
+  return item;
+}
+const TravelPortal={
+  /* shared helpers + data so features stay consistent with the core */
+  helpers:{$,esc,money,pretty,uid,sum},
+  pools:{AIRLINES,AIRPORTS,COUNTRIES,OFFICERS,VENDORS_LIST},
+  DB,RES,UI,ui,
+  store:{lkey,loadRes,saveRes},
+  openForm,closeModal,go:show,filtered,renderTable,renderBoard,
+  /* register a custom page (any HTML) under an id + nav entry */
+  registerPage(o){ // {id,label,sub,render,group,ic,nw,section}
+    PAGES[o.id]={render:o.render}; LABELS[o.id]=o.label||o.id; if(o.sub)SUBS[o.id]=o.sub;
+    if(o.group||o.section!==undefined||o.standalone) addNavItem({id:o.id,label:o.label,ic:o.ic,group:o.group,nw:o.nw});
+    this.refreshNav(); return PAGES[o.id];
+  },
+  /* register a full CRUD resource — gets the generic table/board engine free */
+  registerResource(key,schema,nav){ // nav:{group,ic,nw}
+    schema.key=key; RES[key]=schema; if(!DB[key]) DB[key]=loadRes(key,schema.seed);
+    if(nav) addNavItem({id:key,label:schema.label||key,ic:nav.ic||schema.icon,group:nav.group,nw:nav.nw});
+    this.refreshNav(); return schema;
+  },
+  addGroup,addNavItem,
+  refreshNav(){ buildNav(); setActiveNav(current); },
+  onReady(cb){ try{cb(TravelPortal);}catch(e){console.error('[TravelPortal] feature error:',e);} }
+};
+window.TravelPortal=TravelPortal;
+
 /* ---- boot ---- */
 $('me-av').textContent=EMP.initials; $('me-nm').textContent=EMP.name; $('me-rl').textContent=EMP.desig;
 buildNav();
 show('dashboard');
 </script>
+
+<!-- ════ MODULAR FEATURES (each self-contained in /features/<name>/) · New ════ -->
+<script src="features/quotation/quotation.js"></script>
+
+<!-- ════ EON AI COMPANION — modular 3D assistant (/ai-companion) · New ════ -->
+<script type="module" src="ai-companion/js/main.js"></script>
 </body>
 </html>
