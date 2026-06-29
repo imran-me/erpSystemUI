@@ -66,9 +66,26 @@ The owner ("the boss") / stakeholder is **MD**; many design decisions are tagged
 - **Git**: branch is `main`; commits go straight to `main`. Recent work has been on the Task module and the new Travels employee portal.
 - **Testing**: manual / visual only — there is no test suite.
 
-## Current state (as of 2026-06-29)
-- Latest commit: "Add Epal Travels employee portal (travel.html)".
-- Recent focus: Task Map UX (milestones, per-milestone timers, weighted progress, inline link/attach modals, card avatars) and the new standalone employee portal.
+## Current state (end of 2026-06-29 session)
+**Architecture:** `erp-combined.html` is the product. The Travel module's panel HTML lives in `travel.html` (a fragment) and is injected into combined at parse time (sync XHR + `document.write`). All Travel CSS/JS/nav/RBAC stay in combined. Travel section is gated to the **Travels Agent** role (RBAC "View As", top-right). New feature panels live in `travel.html`; their logic is modular under `features/<id>/<id>.js`; each is registered in combined with a nav item + `erpPanels` + `erpTitles` + RBAC `tvSvc` (small one-liners). All new things carry a green **`New`** badge.
+
+**28 new feature panels built this session** (all `New`-badged, role-gated, in collapsible sidebar groups):
+- *Air Ticketing group:* Flight Booking (GDS-style + add-ons), Quotation Builder, Ticketing Deadlines (TTL), Refund Tracker, BSP/ADM Recon (+IATA API sync, fare audit, unused recovery), Fare-Drop Auto-Rebooker, Schedule-Change Handler, Refund Recovery Autopilot.
+- *Vendor & Agent group:* Vendor/Agent Accounts (ledger + credit limit/terms/DSO-DPO), Commission (slabs/override).
+- *Visa group:* Visa Approval Predictor, Umrah/Hajj Group Orchestrator.
+- *Hotels & Services group:* Hotels & Packages, Other Services (catalog → feeds invoice add-ons), Living Itinerary Concierge.
+- *Intelligence group:* Analytics/MIS, Profit Leak Detector, Fraud & Compliance Sentinel, Customer Travel-DNA, Agent Performance Coach, Task Board.
+- *Automation group:* Document-Expiry Radar, OCR Document Vault, WhatsApp Booking Bot, Dynamic Markup Engine.
+- *Setup & Tools group:* Integrations/API, Currency/FX, FX Exposure Guard.
+- Each feature persists to its own `epal_tv_*` localStorage key; mostly self-contained vanilla JS with injected scoped CSS.
+
+**EON AI:** embedded in `erp-combined.html`. Its Firebase brain (`eon-brain/eon-brain.js`) is NOT used (no Firestore). Instead `eon-brain/epal-brain.js` (loaded before the EON module) sets `window.EonBrain`, reading ALL ERP data (every `epal_*` store + on-screen non-`.tvx` tables) and powering meditate/alerts/Ask-EON. `isOwner()` returns true (demo).
+
+**Polish:** `features/_shared/tv-polish.css` (scoped to `.tvx` class on all 28 new panels) — tabular numbers, focus rings, responsive tables, consistent KPI type, required-field `.req` markers.
+
+**Conventions / preferences (this session):** never delete the user's existing Travel/ERP content — additive only; everything new gets a `New` badge; build features modularly under `features/`; keep the sidebar compact (collapsible groups, grouped by department/section). Permissions broadened in `.claude/settings.local.json`. Wiring edits are done via Node scripts (the files have mixed CRLF/LF; the Travel nav block is LF) and verified with div-balance + `node --check`.
+
+**Possible next steps (not done):** right-align money columns properly (add `.num` to amount cells); standardize KPI card heights; deeper per-panel visual fine-tuning (needs a rendered view — no headless browser available here); port catalog add-ons into more invoices; link existing Manage-Vendor rows to specific party accounts.
 
 ---
 *Update this file as the project evolves so the next session starts with full context.*
